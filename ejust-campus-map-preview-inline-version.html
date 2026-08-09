@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-JUST Campus Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#C8102E;
+  --red-dark:#9F0C24;
+  --red-tint:#FBE7EA;
+  --gold:#C89A44;
+  --gold-tint:#F6EDDB;
+  --ink:#1B1D1F;
+  --ink-soft:#6B7076;
+  --slate:#8A9099;
+  --line:#E6E8EA;
+  --bg:#F6F7F8;
+  --white:#FFFFFF;
+  --green:#1E8A4C;
+  --surface-dark:#1B1D1F;
+  --green-tint:#E3F3E9;
+  --radius:16px;
+  --shadow:0 10px 24px -12px rgba(27,29,31,0.16);
+  --font-display:'Space Grotesk', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box;}
+
+/* ===== CURSOR: pointer on every interactive element ===== */
+button, .btn, select,
+[data-nav], [data-action], [data-searchresult], [data-recent-term], [data-visitor-link],
+[data-pin], [data-pin-select], [data-layer], [data-restab], [data-savedtab], [data-roomfilter],
+[data-toggle-floor], [data-faq], [data-setting], [data-mode], [data-zoomctl], [data-crumb],
+.acc-head, .faq-q, .switch, .avatar, .fchip, .tabbar button, .mode-tabs button,
+.qcard, .pop-card, .res-row, .doc-row, .more-row, .saved-row, .room-tile, .sidebar-item,
+.icon-btn, .bookmark-btn, .swap-btn, .mc-btn, .recent-chip button, .layer-item, .map-pin,
+label.layer-item{
+  cursor:pointer;
+}
+input[type="text"], input[type="email"], textarea{ cursor:text; }
+input:disabled, button:disabled{ cursor:not-allowed; }
+html,body{margin:0; padding:0;}
+body{
+  background:#DEE1E3; font-family:var(--font-body); color:var(--ink); -webkit-font-smoothing:antialiased;
+  min-height:100vh; transition:background .2s;
+}
+body.dark{
+  --ink:#F1F2F3; --ink-soft:#9AA0A6; --line:#2C2F33; --bg:#141618; --white:#1D2023; --red-tint:#3A1A1F; --gold-tint:#332A16;
+  background:#0C0D0E;
+}
+body.dark .qcard, body.dark .card, body.dark .topbar, body.dark .bottombar, body.dark .searchbar,
+body.dark .fchip, body.dark .recent-chip, body.dark .pop-card, body.dark .fromto, body.dark .stat-box,
+body.dark .mode-tabs button, body.dark .tabbar button, body.dark .room-tile, body.dark .fp-cell,
+body.dark .field select, body.dark .field input, body.dark .icon-btn, body.dark .bookmark-btn, body.dark .mc-btn, body.dark .my-loc, body.dark .sheet{
+  background:var(--white); border-color:var(--line); color:var(--ink);
+}
+body.dark .map-canvas{background:var(--bg);}
+[dir="rtl"] .back-link svg, [dir="rtl"] .chev{ transform:scaleX(-1); }
+h1,h2,h3,h4{font-family:var(--font-display); margin:0; letter-spacing:-0.01em;}
+p{margin:0;}
+button{font-family:var(--font-body); cursor:pointer;}
+a{color:inherit; text-decoration:none;}
+.mono{font-family:var(--font-mono);}
+::selection{background:var(--red); color:#fff;}
+:focus-visible{outline:2px solid var(--red); outline-offset:2px;}
+.hidden{display:none !important;}
+
+/* ===== LOGIN SCREEN ===== */
+#screen-login{
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  background:radial-gradient(circle at 30% 20%, #2A1013 0%, #0C0D0E 55%);
+}
+.login-card{ width:100%; max-width:400px; background:var(--white,#fff); border-radius:22px; padding:30px 26px; box-shadow:0 30px 60px -20px rgba(0,0,0,.5); animation:fadeSlideIn .4s ease; }
+.login-logo{ display:flex; align-items:center; gap:12px; margin-bottom:26px; }
+.login-logo b{ font-family:var(--font-display); font-size:17px; display:block; }
+.login-logo span{ font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em; }
+.login-card h1{ font-size:23px; margin-bottom:6px; }
+.login-sub{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-bottom:20px; }
+.login-tabs{ display:flex; gap:6px; background:var(--bg); border-radius:12px; padding:4px; margin-bottom:20px; }
+.login-tabs button{ flex:1; background:none; border:none; border-radius:9px; padding:9px; font-size:13px; font-weight:600; color:var(--ink-soft); transition:background .18s ease, color .18s ease; }
+.login-tabs button.on{ background:#fff; color:var(--ink); box-shadow:0 2px 6px rgba(0,0,0,.08); }
+.login-note{ font-size:11px; color:var(--ink-soft); text-align:center; margin-top:12px; }
+#login-guest-form{ animation:fadeSlideIn .25s ease; }
+#login-student-form{ animation:fadeSlideIn .25s ease; }
+
+
+#app-shell{
+  max-width:460px; margin:0 auto; min-height:100vh; background:var(--bg);
+  box-shadow:var(--shadow); position:relative; display:none; flex-direction:column;
+}
+#app-shell.active{ display:flex; }
+@media(min-width:520px){ body{padding:24px 0;} #app-shell{border-radius:28px; overflow:hidden; min-height:calc(100vh - 48px);} }
+
+/* ===== TOP BAR ===== */
+.topbar{
+  position:sticky; top:0; z-index:40; background:var(--white); border-bottom:1px solid var(--line);
+  padding:12px 14px; display:flex; align-items:center; gap:10px;
+}
+.logo-mark{width:30px; height:30px; border-radius:9px; background:var(--red); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.logo-text{line-height:1.15;}
+.logo-text b{font-family:var(--font-display); font-size:14px; display:block;}
+.logo-text span{font-size:9.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em;}
+.topnav{display:flex; gap:2px; margin-left:auto; flex-shrink:0;}
+.topnav button{background:none; border:none; font-size:10.5px; color:var(--ink-soft); font-weight:600; padding:6px 7px; border-radius:7px;}
+.topnav button.on{color:var(--red); background:var(--red-tint);}
+.avatar{
+  width:28px; height:28px; border-radius:50%; background:var(--surface-dark); color:#fff; display:flex; align-items:center;
+  justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; font-family:var(--font-display); margin-left:4px;
+}
+
+/* ===== BOTTOM TAB BAR ===== */
+.bottombar{
+  position:sticky; bottom:0; z-index:40; background:var(--white); border-top:1px solid var(--line);
+  display:flex; padding:6px 4px 10px;
+}
+.bottombar button{
+  flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
+  color:var(--ink-soft); font-size:10.5px; font-weight:600; padding:6px 2px; border-radius:10px;
+}
+.bottombar button svg{width:20px; height:20px;}
+.bottombar button.on{color:var(--red);}
+
+/* ===== CONTENT ===== */
+#content{flex:1; padding:16px 14px 24px;}
+.back-link{display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:12px;}
+.back-link svg{width:15px; height:15px;}
+.back-link:hover{color:var(--ink);}
+
+/* ===== CARDS / GENERIC ===== */
+.card{background:var(--white); border:1px solid var(--line); border-radius:var(--radius); padding:16px;}
+.card + .card{margin-top:12px;}
+.section-title{font-size:14px; font-weight:700; margin-bottom:10px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; border-radius:11px; font-weight:600; font-size:13px; padding:11px 16px;}
+.btn-block{width:100%;}
+.btn-primary{background:var(--red); color:#fff;}
+.btn-primary:hover{background:var(--red-dark);}
+.btn-dark{background:var(--surface-dark); color:#fff;}
+.btn-dark:hover{background:#000;}
+.btn-ghost{background:var(--white); color:var(--ink); border:1.4px solid var(--line);}
+.btn-ghost:hover{border-color:var(--ink);}
+.btn-sm{padding:8px 12px; font-size:12px;}
+.icon-btn{width:36px; height:36px; border-radius:10px; border:1.4px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.icon-btn.on{background:var(--red-tint); border-color:var(--red);}
+
+/* ===== HOME ===== */
+.hero h1{font-size:24px; line-height:1.15; margin-bottom:6px;}
+.hero p{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-bottom:16px;}
+.searchbar{
+  display:flex; align-items:center; gap:8px; background:#fff; border:1.4px solid var(--line); border-radius:13px;
+  padding:11px 12px; margin-bottom:18px;
+}
+.searchbar input{border:none; outline:none; flex:1; font-size:13.5px; font-family:var(--font-body); background:transparent;}
+.searchbar svg{flex-shrink:0; color:var(--ink-soft);}
+.searchbar button{background:var(--red); color:#fff; border:none; border-radius:9px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+
+.qgrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:18px;}
+.qcard{background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 10px; text-align:left;}
+.qcard .qi{width:34px; height:34px; border-radius:10px; background:var(--red-tint); display:flex; align-items:center; justify-content:center; margin-bottom:10px;}
+.qcard .qi svg{width:17px; height:17px; color:var(--red);}
+.qcard b{font-size:12.5px; display:block;}
+.qcard span{font-size:10.5px; color:var(--ink-soft);}
+
+.guide-card{background:var(--surface-dark); border-radius:16px; padding:18px; color:#fff; position:relative; overflow:hidden;}
+.guide-card h4{font-size:15px; margin-bottom:6px;}
+.guide-card p{font-size:12px; color:rgba(255,255,255,0.65); margin-bottom:14px; max-width:200px;}
+
+/* ===== SEARCH PAGE ===== */
+.chip-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px;}
+.chip-row::-webkit-scrollbar{display:none;}
+.fchip{flex-shrink:0; padding:8px 14px; border-radius:999px; border:1.4px solid var(--line); background:#fff; font-size:12px; font-weight:600; color:var(--ink-soft); white-space:nowrap;}
+.fchip.on{background:var(--surface-dark); color:#fff; border-color:var(--surface-dark);}
+
+.recent-chip{display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); border-radius:999px; padding:6px 6px 6px 12px; font-size:12px; margin:0 8px 8px 0;}
+.recent-chip button{background:var(--bg); border:none; border-radius:50%; width:18px; height:18px; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--ink-soft);}
+
+.pop-card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px; display:flex; align-items:center; gap:10px;}
+.pop-card .qi{width:32px; height:32px; border-radius:9px; background:var(--gold-tint); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.pop-card .qi svg{width:15px; height:15px; color:var(--gold);}
+.pop-card b{font-size:12px; display:block;}
+.pop-card span{font-size:10.5px; color:var(--ink-soft);}
+
+.promo-card{background:var(--red-tint); border-radius:16px; padding:16px; display:flex; gap:12px; align-items:center;}
+.promo-card svg{flex-shrink:0;}
+.promo-card b{font-size:13px; display:block; margin-bottom:2px;}
+.promo-card p{font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;}
+
+/* ===== RESULT ROWS ===== */
+.res-row{display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid var(--line);}
+.res-row:last-child{border-bottom:none;}
+.res-ic{width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff; font-weight:700; font-family:var(--font-mono); font-size:13px;}
+.res-main{flex:1; min-width:0;}
+.res-main b{font-size:13.5px; display:block;}
+.res-main span{font-size:11.5px; color:var(--ink-soft); display:block; margin-top:2px;}
+.res-dist{font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); flex-shrink:0; text-align:right;}
+.res-dist b{color:var(--red); display:block; font-size:12px;}
+
+/* ===== TABS (result / saved) ===== */
+.tabbar{display:flex; gap:6px; overflow-x:auto; margin-bottom:14px;}
+.tabbar button{flex-shrink:0; background:#fff; border:1.4px solid var(--line); border-radius:10px; padding:7px 11px; font-size:11.5px; font-weight:600; color:var(--ink-soft);}
+.tabbar button.on{background:var(--surface-dark); color:#fff; border-color:var(--surface-dark);}
+
+/* ===== BUILDING OVERVIEW ===== */
+.b-head{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px;}
+.b-head h1{font-size:20px;}
+.b-head span{font-size:12px; color:var(--ink-soft);}
+.b-ico{width:52px; height:52px; border-radius:14px; background:var(--gold-tint); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.b-actions{display:flex; gap:8px; margin-bottom:16px;}
+.b-actions .btn{flex:1;}
+
+.accordion{border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#fff; margin-bottom:10px;}
+.acc-head{display:flex; justify-content:space-between; align-items:center; padding:13px 14px; cursor:pointer; font-size:13.5px; font-weight:600;}
+.acc-head svg{transition:transform .15s; color:var(--ink-soft); width:16px; height:16px;}
+.accordion.open .acc-head svg{transform:rotate(180deg);}
+/* .acc-body base + open-state rules now defined in the ANIMATIONS block below (grid-based smooth expand) */
+.room-tile{
+  background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px; text-align:left;
+}
+.room-tile b{font-size:12.5px; display:block; font-family:var(--font-mono);}
+.room-tile span{font-size:10.5px; color:var(--ink-soft); display:block; margin-top:2px;}
+.room-tile.avail-yes{border-color:var(--green); background:var(--green-tint);}
+.room-tile.avail-no{border-color:var(--red); background:var(--red-tint);}
+
+/* ===== MAP PAGE ===== */
+.layer-panel{margin-bottom:12px;}
+.layer-list{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+.layer-item{display:flex; align-items:center; gap:8px; font-size:12px;}
+.layer-item input{accent-color:var(--red); width:15px; height:15px;}
+.map-canvas{position:relative; border-radius:16px; overflow:hidden; background:var(--bg); border:1px solid var(--line);}
+.map-canvas svg{display:block; width:100%; height:auto;}
+.map-controls{position:absolute; right:10px; bottom:64px; display:flex; flex-direction:column; gap:6px;}
+.mc-btn{width:34px; height:34px; border-radius:9px; background:#fff; border:1px solid var(--line); box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; font-size:16px;}
+.my-loc{position:absolute; left:10px; bottom:10px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:11.5px; font-weight:600; display:flex; align-items:center; gap:6px; box-shadow:var(--shadow);}
+.map-pin{cursor:pointer;}
+.map-pin text.lbl{font-family:var(--font-mono); font-size:8.5px; fill:var(--ink-soft);}
+.map-pin.you circle.pulse{animation:pulse 1.8s ease-out infinite;}
+@keyframes pulse{0%{r:8; opacity:.6;} 100%{r:20; opacity:0;}}
+.route-line{stroke-dasharray:6 6; animation:dash 1.2s linear infinite;}
+@keyframes dash{to{stroke-dashoffset:-24;}}
+
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; max-width:460px; margin:0 auto; background:#fff; border-radius:20px 20px 0 0;
+  box-shadow:0 -10px 30px -6px rgba(0,0,0,0.25); padding:16px 16px 22px; z-index:120; animation:sheetup .18s ease;
+}
+@keyframes sheetup{from{transform:translateY(14px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+.sheet-bar{width:36px; height:4px; background:var(--line); border-radius:2px; margin:0 auto 12px;}
+
+/* ===== ROOM DETAIL ===== */
+.floorplan{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:6px;}
+.fp-cell{aspect-ratio:1; border-radius:9px; background:var(--bg); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft);}
+.fp-cell.active{background:var(--red); color:#fff; border-color:var(--red); font-weight:700;}
+.detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0;}
+.detail-grid div span{font-size:10px; color:var(--ink-soft); text-transform:uppercase; font-family:var(--font-mono); letter-spacing:.04em;}
+.detail-grid div b{display:block; font-size:13px; margin-top:2px;}
+.facility-row{display:flex; gap:16px; margin-top:6px;}
+.facility-row div{display:flex; flex-direction:column; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-soft);}
+.facility-row svg{width:18px; height:18px; color:var(--ink);}
+.sticky-actions{display:flex; gap:8px; margin-top:16px;}
+.sticky-actions .btn{flex:1;}
+
+/* ===== DIRECTIONS ===== */
+.mode-tabs{display:flex; gap:6px; margin-bottom:14px;}
+.mode-tabs button{flex:1; background:#fff; border:1.4px solid var(--line); border-radius:11px; padding:9px 4px; font-size:11px; font-weight:600; color:var(--ink-soft); display:flex; flex-direction:column; align-items:center; gap:4px;}
+.mode-tabs button.on{background:var(--surface-dark); color:#fff; border-color:var(--surface-dark);}
+.mode-tabs svg{width:16px; height:16px;}
+.fromto{background:#fff; border:1px solid var(--line); border-radius:14px; padding:4px; margin-bottom:14px; position:relative;}
+.ft-row{display:flex; align-items:center; gap:10px; padding:10px 10px;}
+.ft-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+.ft-row select{border:none; outline:none; font-size:13px; background:transparent; width:100%; font-family:var(--font-body); color:var(--ink);}
+.ft-divider{height:1px; background:var(--line); margin:0 10px;}
+.swap-btn{position:absolute; right:8px; top:50%; transform:translateY(-50%); width:30px; height:30px; border-radius:50%; background:var(--bg); border:1px solid var(--line); display:flex; align-items:center; justify-content:center;}
+.stat-row{display:flex; gap:10px; margin-bottom:14px;}
+.stat-box{flex:1; background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; text-align:center;}
+.stat-box b{font-size:18px; display:block; font-family:var(--font-mono);}
+.stat-box span{font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;}
+.acc-toggle{display:flex; align-items:center; justify-content:space-between; padding:2px 2px 14px;}
+.acc-toggle span{font-size:12px; color:var(--ink-soft);}
+.step-row{display:flex; gap:10px; padding:11px 0; border-bottom:1px solid var(--line);}
+.step-row:last-child{border-bottom:none;}
+.step-num{width:24px; height:24px; border-radius:50%; background:var(--surface-dark); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-family:var(--font-mono); flex-shrink:0;}
+.step-row p{font-size:12.5px; line-height:1.5;}
+.step-row p b{display:block; font-size:12.5px;}
+.step-row p .sd{font-family:var(--font-mono); font-size:10.5px; color:var(--ink-soft);}
+
+/* ===== DOCTORS ===== */
+.doc-row{display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid var(--line);}
+.doc-row:last-child{border-bottom:none;}
+.doc-photo{width:42px; height:42px; border-radius:50%; background:var(--surface-dark); color:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:13px; flex-shrink:0;}
+.doc-main{flex:1; min-width:0;}
+.doc-main b{font-size:13.5px; display:block;}
+.doc-main .dept{font-size:11.5px; color:var(--red); font-weight:600;}
+.doc-main .loc{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+.bookmark-btn{width:32px; height:32px; border-radius:9px; border:1.4px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.bookmark-btn.on{background:var(--red); border-color:var(--red);}
+.bookmark-btn.on svg{color:#fff;}
+.field select, .field input{width:100%; padding:10px 12px; border-radius:10px; border:1.4px solid var(--line); font-size:13px; background:#fff; font-family:var(--font-body); color:var(--ink);}
+.field{margin-bottom:12px;}
+.field label{font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:6px; font-family:var(--font-mono);}
+
+/* ===== VISITOR GUIDE ===== */
+.vg-step{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line);}
+.vg-step:last-child{border-bottom:none;}
+.vg-num{width:26px; height:26px; border-radius:50%; background:var(--red); color:#fff; font-family:var(--font-mono); font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.vg-step b{font-size:13px; display:block;}
+.vg-step span{font-size:11.5px; color:var(--ink-soft);}
+.help-card{background:var(--surface-dark); color:#fff; border-radius:16px; padding:16px; display:flex; gap:12px; align-items:center; margin-top:12px;}
+.help-ic{width:40px; height:40px; border-radius:11px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.help-card b{font-size:13px; display:block;}
+.help-card p{font-size:11.5px; color:rgba(255,255,255,0.6); margin-top:2px;}
+
+/* ===== SAVED ===== */
+.saved-row{display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid var(--line);}
+.saved-row:last-child{border-bottom:none;}
+.saved-x{width:26px; height:26px; border-radius:50%; background:var(--bg); border:none; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); flex-shrink:0;}
+
+/* ===== MORE MENU ===== */
+.more-row{display:flex; align-items:center; gap:12px; padding:13px; border-bottom:1px solid var(--line);}
+.more-row:last-child{border-bottom:none;}
+.more-ic{width:34px; height:34px; border-radius:10px; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.more-row b{font-size:13px; flex:1;}
+.more-row svg.chev{width:15px; height:15px; color:var(--ink-soft);}
+
+/* ===== FAQ / SETTINGS ===== */
+.faq-item{border-bottom:1px solid var(--line); padding:12px 0;}
+.faq-item:last-child{border-bottom:none;}
+.faq-q{display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:600; cursor:pointer;}
+.faq-q svg{width:15px; height:15px; transition:transform .15s; color:var(--ink-soft);}
+.faq-item.open .faq-q svg{transform:rotate(45deg);}
+.faq-a{font-size:12px; color:var(--ink-soft); margin-top:8px; line-height:1.55; display:none;}
+.faq-item.open .faq-a{display:block;}
+.toggle-row{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-row b{font-size:13px; display:block;}
+.toggle-row span{font-size:11px; color:var(--ink-soft);}
+.switch{position:relative; width:40px; height:23px; background:var(--line); border-radius:999px; flex-shrink:0;}
+.switch.on{background:var(--red);}
+.switch .knob{position:absolute; top:3px; left:3px; width:17px; height:17px; background:#fff; border-radius:50%; transition:left .15s;}
+.switch.on .knob{left:20px;}
+
+.empty{text-align:center; padding:50px 16px; color:var(--ink-soft);}
+.empty svg{margin-bottom:12px; opacity:.5;}
+.empty h4{font-size:14px; color:var(--ink); margin-bottom:6px;}
+.empty p{font-size:12px;}
+
+.toast{
+  position:fixed; bottom:78px; left:50%; transform:translateX(-50%) translateY(10px); background:var(--surface-dark); color:#fff;
+  padding:11px 18px; border-radius:10px; font-size:12.5px; opacity:0; transition:opacity .2s, transform .2s; z-index:200;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+.badge-toast{
+  position:fixed; top:16px; left:0; right:0; margin:0 auto; max-width:420px; width:calc(100% - 32px); z-index:250;
+  background:linear-gradient(135deg, var(--red), var(--red-dark)); color:#fff; border-radius:14px; padding:12px 16px;
+  display:flex; align-items:center; gap:12px; box-shadow:0 14px 30px -10px rgba(200,16,46,.5); opacity:0;
+  transform:translateY(-30px); transition:opacity .3s cubic-bezier(.34,1.56,.64,1), transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.badge-toast.show{ opacity:1; transform:translateY(0); }
+.badge-toast-ic{ width:38px; height:38px; border-radius:11px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; flex-shrink:0; animation:pop .5s ease .1s backwards; }
+.badge-toast b{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; opacity:.85; display:block; }
+.badge-toast span{ font-size:14px; font-weight:700; display:block; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeSlideIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+.page-enter{ animation:fadeSlideIn .3s cubic-bezier(.22,.9,.32,1); }
+@keyframes stepIn{ from{opacity:0; transform:translateX(-8px);} to{opacity:1; transform:translateX(0);} }
+@keyframes pinDrop{ from{opacity:0; transform:translateY(-8px) scale(.7);} to{opacity:1; transform:translateY(0) scale(1);} }
+.map-pin{ animation:pinDrop .4s cubic-bezier(.34,1.56,.64,1) backwards; }
+.map-pin.no-anim{ animation:none; }
+@keyframes pop{ 0%{transform:scale(1);} 45%{transform:scale(1.35);} 100%{transform:scale(1);} }
+.icon-btn.on, .bookmark-btn.on{ animation:pop .35s ease; }
+@keyframes pulse2{ 0%{box-shadow:0 0 0 0 rgba(30,138,76,.5);} 100%{box-shadow:0 0 0 8px rgba(30,138,76,0);} }
+
+/* buttons & pressables */
+.btn{ transition:transform .12s ease, background .15s ease, box-shadow .15s ease; }
+.btn:active{ transform:scale(.96); }
+.icon-btn, .bookmark-btn, .mc-btn, .swap-btn{ transition:transform .12s ease, background .15s ease; }
+.icon-btn:active, .bookmark-btn:active, .mc-btn:active, .swap-btn:active{ transform:scale(.9); }
+.qcard, .pop-card, .room-tile, .guide-card, .promo-card{ transition:transform .16s ease, box-shadow .16s ease; }
+.qcard:active, .pop-card:active, .room-tile:active{ transform:scale(.96); }
+.res-row, .doc-row, .more-row, .saved-row{ transition:background .15s ease; }
+.res-row:active, .doc-row:active, .more-row:active{ background:var(--bg); }
+@media(hover:hover){
+  .qcard:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
+  .pop-card:hover{ transform:translateY(-1px); box-shadow:var(--shadow); }
+  .room-tile:hover{ transform:translateY(-1px); }
+  .res-row:hover, .doc-row:hover, .more-row:hover{ background:var(--bg); }
+}
+.fchip, .tabbar button, .mode-tabs button{ transition:background .18s ease, color .18s ease, transform .12s ease; }
+.fchip:active, .tabbar button:active, .mode-tabs button:active{ transform:scale(.95); }
+
+/* bottom / top nav */
+.bottombar button svg{ transition:transform .22s cubic-bezier(.34,1.56,.64,1); }
+.bottombar button.on svg{ transform:translateY(-2px) scale(1.08); }
+.topnav button{ transition:background .18s ease, color .18s ease; }
+
+/* smooth accordion */
+.acc-body{ max-height:0; overflow:hidden; transition:max-height .32s cubic-bezier(.4,0,.2,1); }
+.accordion.open .acc-body{ max-height:1000px; }
+.acc-body-inner{ padding:2px 14px 14px; }
+.accordion.open .acc-head svg{ transition:transform .22s ease; }
+
+/* golf cart request flow */
+.golfcart-card{ animation:fadeSlideIn .25s ease; }
+.cart-spinner{ width:44px; height:44px; border-radius:12px; background:var(--red-tint); display:flex; align-items:center; justify-content:center; animation:cartBounce 1s ease-in-out infinite; flex-shrink:0; }
+@keyframes cartBounce{ 0%,100%{transform:translateX(0);} 50%{transform:translateX(4px);} }
+.pulse-dots{ display:flex; gap:6px; }
+.pulse-dots span{ width:7px; height:7px; border-radius:50%; background:var(--red); opacity:.3; animation:dotPulse 1.2s ease-in-out infinite; }
+.pulse-dots span:nth-child(2){ animation-delay:.15s; }
+.pulse-dots span:nth-child(3){ animation-delay:.3s; }
+@keyframes dotPulse{ 0%,80%,100%{opacity:.25; transform:scale(.85);} 40%{opacity:1; transform:scale(1);} }
+.cart-track{ position:relative; height:6px; background:var(--line); border-radius:999px; margin-top:4px; overflow:visible; }
+.cart-track-fill{ position:absolute; left:0; top:0; height:100%; width:40%; background:var(--red); border-radius:999px; animation:trackFill 2.2s ease-in-out infinite alternate; }
+@keyframes trackFill{ from{width:8%;} to{width:88%;} }
+.cart-icon-moving{ position:absolute; top:50%; left:8%; transform:translate(-50%,-50%); width:22px; height:22px; border-radius:50%; background:var(--red); display:flex; align-items:center; justify-content:center; animation:cartMove 2.2s ease-in-out infinite alternate; box-shadow:0 2px 6px rgba(200,16,46,.4); }
+@keyframes cartMove{ from{left:8%;} to{left:88%;} }
+
+/* toast */
+.toast{ transition:opacity .25s cubic-bezier(.34,1.56,.64,1), transform .25s cubic-bezier(.34,1.56,.64,1); }
+
+/* pin sheet slide already has sheetup */
+/* ===== badges page ===== */
+.page-head-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+.lb-row{ display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--line); }
+.lb-row:last-child{ border-bottom:none; }
+.lb-row.lb-me{ background:var(--red-tint); margin:0 -12px; padding:11px 12px; border-radius:10px; border-bottom:none; }
+.lb-rank{ width:24px; height:24px; border-radius:50%; background:var(--bg); color:var(--ink-soft); font-family:var(--font-mono); font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.badge-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.badge-cell{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; text-align:center; position:relative; }
+.badge-cell.locked{ opacity:.45; }
+.badge-cell .b-ic{ width:44px; height:44px; border-radius:13px; background:var(--red-tint); display:flex; align-items:center; justify-content:center; margin:0 auto 10px; }
+.badge-cell.locked .b-ic{ background:var(--bg); }
+.badge-cell.unlocked{ animation:pop .35s ease; }
+.badge-cell b{ font-size:12px; display:block; margin-bottom:3px; }
+.badge-cell span{ font-size:10.5px; color:var(--ink-soft); line-height:1.4; display:block; }
+.badge-cell .lock-ic{ position:absolute; top:8px; right:8px; opacity:.5; }
+.badge-progress-bar{ height:8px; border-radius:999px; background:var(--line); overflow:hidden; margin:10px 0 4px; }
+.badge-progress-fill{ height:100%; background:var(--red); border-radius:999px; transition:width .4s ease; }
+
+/* ===== schedule ===== */
+.next-class-card{ background:linear-gradient(135deg, var(--surface-dark), #2A2E33); color:#fff; border-radius:16px; padding:16px; margin-bottom:16px; transition:background .25s ease; }
+.next-class-card.urgent{ background:linear-gradient(135deg, var(--red), var(--red-dark)); animation:urgentPulse 1.8s ease-in-out infinite; }
+@keyframes urgentPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(200,16,46,.35); } 50%{ box-shadow:0 0 0 8px rgba(200,16,46,0); } }
+.next-class-card .nc-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; opacity:.75; margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.next-class-card h4{ font-size:16px; margin-bottom:4px; }
+.next-class-card .nc-meta{ font-size:12px; opacity:.75; margin-bottom:12px; }
+.next-class-card .nc-stats{ display:flex; gap:16px; }
+.next-class-card .nc-stat b{ font-family:var(--font-mono); font-size:17px; display:block; }
+.next-class-card .nc-stat span{ font-size:10px; opacity:.6; text-transform:uppercase; }
+.class-row{ display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid var(--line); }
+.class-row:last-child{ border-bottom:none; }
+.class-day-chip{ width:40px; height:40px; border-radius:11px; background:var(--red-tint); color:var(--red); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:700; font-size:11px; flex-shrink:0; }
+
+/* ===== study room booking / occupancy ===== */
+.occ-bar-wrap{ display:flex; align-items:center; gap:10px; margin-top:8px; }
+.occ-bar{ flex:1; height:9px; border-radius:999px; background:var(--line); overflow:hidden; }
+.occ-bar-fill{ height:100%; border-radius:999px; transition:width .3s ease; }
+.slot-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; }
+.slot-btn{ padding:9px 4px; border-radius:9px; border:1.4px solid var(--line); background:#fff; font-size:11px; font-weight:600; font-family:var(--font-mono); color:var(--ink-soft); }
+.slot-btn.booked-mine{ background:var(--red); border-color:var(--red); color:#fff; }
+.slot-btn.booked-other{ background:var(--bg); border-color:var(--line); color:var(--ink-soft); text-decoration:line-through; }
+.study-room-card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px; }
+
+/* ===== QR check-in overlay ===== */
+.qr-overlay{ position:fixed; inset:0; background:rgba(10,12,13,.82); z-index:300; display:flex; align-items:center; justify-content:center; padding:24px; animation:fadeSlideIn .2s ease; }
+.qr-modal{ background:var(--surface-dark); border-radius:22px; padding:28px 24px 26px; width:100%; max-width:320px; text-align:center; position:relative; }
+.qr-close{ position:absolute; top:12px; right:12px; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.1); border:none; color:#fff; font-size:16px; }
+.qr-viewfinder{ position:relative; width:180px; height:180px; margin:8px auto 18px; border-radius:16px; overflow:hidden; background:#fff; }
+.qr-code-art{ width:100%; height:100%; }
+.qr-scanline{ position:absolute; left:6%; right:6%; height:2.5px; background:var(--red); box-shadow:0 0 10px 2px rgba(200,16,46,.7); animation:qrScan 1.6s ease-in-out infinite; }
+@keyframes qrScan{ 0%{top:6%;} 50%{top:92%;} 100%{top:6%;} }
+.qr-corner{ position:absolute; width:22px; height:22px; border-color:var(--red); }
+.qr-corner.tl{ top:6px; left:6px; border-top:3px solid; border-left:3px solid; border-radius:6px 0 0 0; }
+.qr-corner.tr{ top:6px; right:6px; border-top:3px solid; border-right:3px solid; border-radius:0 6px 0 0; }
+.qr-corner.bl{ bottom:6px; left:6px; border-bottom:3px solid; border-left:3px solid; border-radius:0 0 0 6px; }
+.qr-corner.br{ bottom:6px; right:6px; border-bottom:3px solid; border-right:3px solid; border-radius:0 0 6px 0; }
+.qr-status{ color:#fff; font-size:14.5px; font-weight:700; margin-bottom:4px; }
+.qr-substatus{ color:rgba(255,255,255,.55); font-size:12px; }
+.qr-success-ic{ width:64px; height:64px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center; margin:8px auto 18px; animation:pop .4s ease; }
+
+</style>
+</head>
+<body>
+<div id="screen-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-mark" style="width:44px; height:44px; border-radius:13px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 2 3 7l9 5 9-5-9-5z"/><path d="M3 12l9 5 9-5"/></svg></div>
+      <div><b>E-JUST</b><span>Campus Map</span></div>
+    </div>
+    <h1>Welcome back</h1>
+    <p class="login-sub">Sign in to track badges, save your schedule, and book study rooms.</p>
+    <div class="login-tabs">
+      <button class="on" data-logintab="student">Student</button>
+      <button data-logintab="guest">Guest</button>
+    </div>
+    <div id="login-student-form">
+      <div class="field"><label>USERNAME</label><input type="text" id="login-username" placeholder="e.g. mustafa.gomaa"></div>
+      <div class="field"><label>PASSWORD</label><input type="password" id="login-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>
+      <button class="btn btn-primary btn-block" id="login-submit">Sign In</button>
+      <p class="login-note">Prototype login &mdash; any details will work.</p>
+    </div>
+    <div id="login-guest-form" class="hidden">
+      <p class="login-note" style="margin:6px 0 16px;">Browse the map, search buildings and doctors, and get directions without an account. Badges and schedule won\u2019t be saved.</p>
+      <button class="btn btn-dark btn-block" id="login-guest-submit">Continue as Guest</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-shell">
+  <div class="topbar">
+    <div class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 2 3 7l9 5 9-5-9-5z"/><path d="M3 12l9 5 9-5"/></svg></div>
+    <div class="logo-text"><b>E-JUST</b><span>Campus Map</span></div>
+    <div class="topnav" id="topnav">
+      <button data-nav="map"><span data-lbl="map">Map</span></button>
+      <button data-nav="doctors"><span data-lbl="directory">Directory</span></button>
+      <button data-nav="visitor"><span data-lbl="explore">Explore</span></button>
+      <button data-nav="help"><span data-lbl="help">Help</span></button>
+    </div>
+    <div class="avatar" data-nav="profile" id="topbar-avatar">GU</div>
+  </div>
+
+  <div id="content"></div>
+
+  <div class="bottombar" id="bottombar">
+    <button data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span class="lbl" data-lbl="home">Home</span></button>
+    <button data-nav="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/></svg><span class="lbl" data-lbl="map">Map</span></button>
+    <button data-nav="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="lbl" data-lbl="search">Search</span></button>
+    <button data-nav="saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span class="lbl" data-lbl="saved">Saved</span></button>
+    <button data-nav="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span class="lbl" data-lbl="more">More</span></button>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const CAT_COLOR = { building:'#2B2E33', library:'#2B2E33', medical:'#C8102E', service:'#C89A44', parking:'#8A9099', gate:'#1B1D1F', restroom:'#8A9099', atm:'#C89A44' };
+const CAT_LETTER = { building:'B', library:'L', medical:'M', service:'S', parking:'P', gate:'G', restroom:'R', atm:'A' };
+
+const BUILDINGS = [
+  { id:'b18', code:'B18', name:'Administration Building', dept:'University Administration', floors:['Ground Floor','First Floor','Second Floor','Third Floor'], x:22, y:27,
+    description:'Deans\u2019 offices, admissions, registration and finance. Nearly every visitor errand starts here.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-b18-101', number:'101', type:'Admissions Office', capacity:6, dept:'Admissions', equipment:['Reception desk','Queue system'], available:true},
+        {id:'r-b18-102', number:'102', type:'Visitor Reception', capacity:8, dept:'Front Desk', equipment:['Waiting seats','Info counter'], available:true},
+        {id:'r-b18-103', number:'103', type:'Cashier', capacity:3, dept:'Finance Office', equipment:['Payment counter'], available:false},
+        {id:'r-b18-104', number:'104', type:'Print &amp; Copy Center', capacity:2, dept:'Student Services', equipment:['Printers','Binding machine'], available:true}
+      ],
+      'First Floor':[
+        {id:'r-b18-201', number:'201', type:'Registrar', capacity:5, dept:'Registrar', equipment:['Counter','Filing'], available:false},
+        {id:'r-b18-202', number:'202', type:'Records Office', capacity:4, dept:'Registrar', equipment:['Archive shelving','Scanner'], available:true},
+        {id:'r-b18-203', number:'203', type:'Academic Advising', capacity:3, dept:'Student Affairs', equipment:['Desk','Meeting chairs'], available:true},
+        {id:'r-b18-204', number:'204', type:'International Students Office', capacity:3, dept:'Student Affairs', equipment:['Desk','Visa filing cabinet'], available:false}
+      ],
+      'Second Floor':[
+        {id:'r-b18-301', number:'301', type:'Finance Office', capacity:5, dept:'Finance Office', equipment:['Desks','Safe'], available:true},
+        {id:'r-b18-302', number:'302', type:'Procurement', capacity:3, dept:'Finance Office', equipment:['Desk','Filing'], available:true},
+        {id:'r-b18-303', number:'303', type:'HR Department', capacity:4, dept:'Human Resources', equipment:['Desks','Interview room'], available:false},
+        {id:'r-b18-304', number:'304', type:'IT Support Desk', capacity:2, dept:'Campus IT', equipment:['Workbench','Spare hardware'], available:true}
+      ],
+      'Third Floor':[
+        {id:'r-b18-401', number:'401', type:'Dean of Students Office', capacity:2, dept:'Dean of Students', equipment:['Desk','Meeting table'], available:false},
+        {id:'r-b18-402', number:'402', type:'Meeting Room A', capacity:10, dept:'University Administration', equipment:['Conference table','Display'], available:true},
+        {id:'r-b18-403', number:'403', type:'Meeting Room B', capacity:6, dept:'University Administration', equipment:['Round table','Whiteboard'], available:true},
+        {id:'r-b18-305', number:'404', type:'President\u2019s Liaison Office', capacity:2, dept:'University Administration', equipment:['Desk','Reception chairs'], available:false}
+      ]
+    },
+    offices:['Admissions Office', 'Registrar', 'Finance Office', 'Dean of Students', 'Human Resources'],
+    facilities:['desk','wifi','ac']
+  },
+  { id:'coe', code:'COE', name:'College of Engineering', dept:'Engineering', floors:['Ground Floor','First Floor','Second Floor','Third Floor','Fourth Floor'], x:56, y:27,
+    description:'Main engineering faculty building \u2014 mechanical, civil and electrical departments, plus the Dean of Engineering\u2019s suite.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-coe-101', number:'101', type:'Lecture Hall', capacity:120, dept:'Mechanical Engineering', equipment:['Projector','PA system','Whiteboard'], available:true},
+        {id:'r-coe-102', number:'102', type:'Lecture Hall', capacity:100, dept:'Civil Engineering', equipment:['Projector','Whiteboard'], available:false},
+        {id:'r-coe-103', number:'103', type:'Engineering Workshop', capacity:20, dept:'Mechanical Engineering', equipment:['Lathes','Workbenches','Safety gear'], available:true},
+        {id:'l-coe-6', number:'Lab 6', type:'Materials Testing Lab', capacity:18, dept:'Civil Engineering', equipment:['Tensile tester','Concrete molds'], available:true}
+      ],
+      'First Floor':[
+        {id:'r-coe-204', number:'204', type:'Classroom', capacity:40, dept:'Civil Engineering', equipment:['Projector','Whiteboard'], available:false},
+        {id:'r-coe-205', number:'205', type:'Classroom', capacity:36, dept:'Mechanical Engineering', equipment:['Projector','Whiteboard'], available:true},
+        {id:'l-coe-1', number:'Lab 4', type:'Robotics Lab', capacity:24, dept:'Mechanical Engineering', equipment:['3D printer','Robotic arms'], available:true},
+        {id:'l-coe-7', number:'Lab 7', type:'CAD &amp; Design Lab', capacity:26, dept:'Mechanical Engineering', equipment:['26 workstations','Plotter'], available:false}
+      ],
+      'Second Floor':[
+        {id:'r-coe-305', number:'305', type:'Classroom', capacity:36, dept:'Electrical Engineering', equipment:['Smart board','Projector'], available:true},
+        {id:'r-coe-306', number:'306', type:'Seminar Room', capacity:20, dept:'Electrical Engineering', equipment:['Round table','Display'], available:true},
+        {id:'l-coe-8', number:'Lab 8', type:'Circuits Lab', capacity:24, dept:'Electrical Engineering', equipment:['Oscilloscopes','Breadboards'], available:false},
+        {id:'l-coe-9', number:'Lab 9', type:'Power Systems Lab', capacity:20, dept:'Electrical Engineering', equipment:['Transformers','Switchgear rig'], available:true}
+      ],
+      'Third Floor':[
+        {id:'r-coe-401', number:'401', type:'Faculty Office A', capacity:2, dept:'Mechanical Engineering', equipment:['Desk','Bookshelf'], available:false},
+        {id:'r-coe-402', number:'402', type:'Faculty Office B', capacity:2, dept:'Civil Engineering', equipment:['Desk','Bookshelf'], available:true},
+        {id:'r-coe-403', number:'403', type:'Teaching Assistant Office', capacity:4, dept:'Engineering Administration', equipment:['Shared desks'], available:true},
+        {id:'r-coe-404', number:'404', type:'Student Study Lounge', capacity:16, dept:'Engineering Student Affairs', equipment:['Sofas','Whiteboard wall'], available:true}
+      ],
+      'Fourth Floor':[
+        {id:'r-coe-410', number:'501', type:'Dean\u2019s Office', capacity:2, dept:'Engineering Administration', equipment:['Desk','Meeting table'], available:true},
+        {id:'r-coe-502', number:'502', type:'Dean\u2019s Meeting Room', capacity:12, dept:'Engineering Administration', equipment:['Conference table','Video conferencing'], available:false},
+        {id:'r-coe-503', number:'503', type:'Engineering Student Affairs', capacity:4, dept:'Engineering Student Affairs', equipment:['Desks','Filing'], available:true},
+        {id:'r-coe-504', number:'504', type:'Conference Hall', capacity:80, dept:'Engineering Administration', equipment:['Stage','PA system','Projector'], available:true}
+      ]
+    },
+    offices:['Dean of Engineering', 'Engineering Student Affairs'],
+    facilities:['projector','whiteboard','ac']
+  },
+  { id:'b26', code:'B26', name:'B26', dept:'General Faculty', floors:['Ground Floor','First Floor','Second Floor'], x:68, y:30,
+    description:'Shared classroom building used across first and second year courses.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-b26-101', number:'101', type:'Classroom', capacity:45, dept:'General Faculty', equipment:['Projector','Whiteboard'], available:true},
+        {id:'r-b26-102', number:'102', type:'Classroom', capacity:45, dept:'General Faculty', equipment:['Projector','Whiteboard'], available:false},
+        {id:'r-b26-103', number:'103', type:'Classroom', capacity:38, dept:'General Faculty', equipment:['Whiteboard'], available:true},
+        {id:'r-b26-104', number:'104', type:'Tutorial Room', capacity:24, dept:'General Faculty', equipment:['Round tables'], available:true}
+      ],
+      'First Floor':[
+        {id:'r-b26-210', number:'201', type:'Classroom', capacity:38, dept:'General Faculty', equipment:['Smart board'], available:false},
+        {id:'r-b26-202', number:'202', type:'Classroom', capacity:38, dept:'General Faculty', equipment:['Projector'], available:true},
+        {id:'r-b26-203', number:'203', type:'Computer Room', capacity:30, dept:'General Faculty', equipment:['30 workstations'], available:true}
+      ],
+      'Second Floor':[
+        {id:'r-b26-301', number:'301', type:'Faculty Office', capacity:2, dept:'General Faculty', equipment:['Desk'], available:true},
+        {id:'r-b26-302', number:'302', type:'Faculty Office', capacity:2, dept:'General Faculty', equipment:['Desk'], available:false},
+        {id:'r-b26-303', number:'303', type:'Seminar Room', capacity:18, dept:'General Faculty', equipment:['Round table','Display'], available:true}
+      ]
+    },
+    offices:['Faculty Office B26'], facilities:['projector','ac']
+  },
+  { id:'blue-hall', code:'Blue Hall', name:'Blue Hall', dept:'Lecture Halls', floors:['Ground Floor'], x:30, y:32,
+    description:'Large-capacity lecture hall used for shared first-year courses and public talks.',
+    roomsByFloor:{ 'Ground Floor':[
+      {id:'r-blue-1', number:'Hall 1', type:'Lecture Hall', capacity:200, dept:'Lecture Halls', equipment:['Dual projector','PA system'], available:false},
+      {id:'r-blue-2', number:'CR', type:'Control Room', capacity:2, dept:'Media Services', equipment:['Sound board','Recording rig'], available:true},
+      {id:'r-blue-3', number:'GR', type:'Green Room', capacity:6, dept:'Student Activities', equipment:['Mirrors','Seating'], available:true},
+      {id:'r-blue-4', number:'ST', type:'Storage', capacity:0, dept:'Facilities', equipment:['Chairs','Event equipment'], available:true}
+    ] },
+    offices:[], facilities:['ac','wifi']
+  },
+  { id:'b17', code:'B17', name:'B17', dept:'General Faculty', floors:['Ground Floor','First Floor','Second Floor'], x:25, y:39,
+    description:'Mixed-use classroom building on the west side of the academic core.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-b17-101', number:'101', type:'Classroom', capacity:42, dept:'General Faculty', equipment:['Projector','Whiteboard'], available:true},
+        {id:'r-b17-102', number:'102', type:'Classroom', capacity:42, dept:'General Faculty', equipment:['Projector'], available:true},
+        {id:'r-b17-103', number:'103', type:'Tutorial Room', capacity:20, dept:'General Faculty', equipment:['Round tables'], available:false}
+      ],
+      'First Floor':[
+        {id:'r-b17-201', number:'201', type:'Classroom', capacity:36, dept:'General Faculty', equipment:['Whiteboard'], available:true},
+        {id:'r-b17-202', number:'202', type:'Classroom', capacity:36, dept:'General Faculty', equipment:['Projector'], available:false},
+        {id:'r-b17-203', number:'203', type:'Computer Lab', capacity:28, dept:'General Faculty', equipment:['28 workstations'], available:true}
+      ],
+      'Second Floor':[
+        {id:'r-b17-301', number:'301', type:'Faculty Office', capacity:2, dept:'General Faculty', equipment:['Desk'], available:true},
+        {id:'r-b17-302', number:'302', type:'Faculty Office', capacity:2, dept:'General Faculty', equipment:['Desk'], available:true}
+      ]
+    },
+    offices:['Faculty Office B17'], facilities:['projector']
+  },
+  { id:'b7', code:'B7', name:'Computer Science &amp; AI Center', dept:'Computer Science', floors:['Ground Floor','First Floor','Second Floor','Third Floor'], x:37, y:41,
+    description:'Home to Computer Science, Artificial Intelligence and Cybersecurity, plus the main student server room.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-b7-102', number:'101', type:'AI Seminar Room', capacity:20, dept:'Artificial Intelligence', equipment:['Round table','Display'], available:false},
+        {id:'r-b7-103', number:'102', type:'Student Help Desk', capacity:3, dept:'Computer Science', equipment:['Service counter'], available:true},
+        {id:'r-b7-104', number:'103', type:'IT Support Office', capacity:3, dept:'Campus IT', equipment:['Workbench','Spare parts'], available:true},
+        {id:'r-b7-105', number:'104', type:'Server Room', capacity:0, dept:'Campus IT', equipment:['Racks','Cooling system'], available:false}
+      ],
+      'First Floor':[
+        {id:'r-b7-201', number:'201', type:'Lecture Hall', capacity:90, dept:'Computer Science', equipment:['Dual projector','Lecture capture'], available:true},
+        {id:'r-b7-202', number:'202', type:'Classroom', capacity:40, dept:'Computer Science', equipment:['Projector','Whiteboard'], available:true},
+        {id:'l-b7-2', number:'Lab 2', type:'Networking Lab', capacity:28, dept:'Computer Science', equipment:['Cisco switches','28 stations'], available:true},
+        {id:'l-b7-6', number:'Lab 6', type:'Software Engineering Lab', capacity:30, dept:'Computer Science', equipment:['30 workstations','Git servers'], available:false}
+      ],
+      'Second Floor':[
+        {id:'r-b7-305', number:'301', type:'Classroom', capacity:32, dept:'Cybersecurity', equipment:['Smart board','30 stations'], available:true},
+        {id:'r-b7-302', number:'302', type:'Classroom', capacity:32, dept:'Artificial Intelligence', equipment:['Smart board'], available:false},
+        {id:'l-b7-3', number:'Lab 3', type:'Security Operations Lab', capacity:20, dept:'Cybersecurity', equipment:['SIEM sandbox','Isolated VLAN'], available:false},
+        {id:'l-b7-7', number:'Lab 7', type:'Machine Learning Lab', capacity:24, dept:'Artificial Intelligence', equipment:['GPU workstations'], available:true}
+      ],
+      'Third Floor':[
+        {id:'r-b7-401', number:'401', type:'Faculty Office \u2014 CS Head', capacity:2, dept:'Computer Science', equipment:['Desk','Bookshelf'], available:false},
+        {id:'r-b7-102b', number:'402', type:'Faculty Office \u2014 Cyber Coordinator', capacity:2, dept:'Cybersecurity', equipment:['Desk'], available:true},
+        {id:'r-b7-403', number:'403', type:'Teaching Assistant Office', capacity:4, dept:'Computer Science', equipment:['Shared desks'], available:true},
+        {id:'r-b7-404', number:'404', type:'Student Study Lounge', capacity:18, dept:'Computer Science', equipment:['Sofas','Charging stations'], available:true}
+      ]
+    },
+    offices:['Head of Computer Science Department', 'Cybersecurity Program Coordinator'],
+    facilities:['projector','wifi','ac']
+  },
+  { id:'library', code:'Library', name:'Central Library', dept:'Library Services', floors:['Ground Floor','First Floor','Second Floor'], x:47, y:40,
+    description:'Main university library with quiet study floors, group rooms, and the archive collection.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-lib-g1', number:'G1', type:'Group Study Room', capacity:8, dept:'Library Services', equipment:['Whiteboard','Monitor'], available:true, bookable:true},
+        {id:'r-lib-g2b', number:'G2', type:'Group Study Room', capacity:8, dept:'Library Services', equipment:['Whiteboard','Monitor'], available:false, bookable:true},
+        {id:'r-lib-circ', number:'CD', type:'Circulation Desk', capacity:3, dept:'Library Services', equipment:['Checkout counter','Scanner'], available:true},
+        {id:'r-lib-cafe', number:'CC', type:'Cafe Corner', capacity:24, dept:'Library Services', equipment:['Coffee bar','Seating'], available:true}
+      ],
+      'First Floor':[
+        {id:'r-lib-g2', number:'Q1', type:'Silent Study Zone', capacity:60, dept:'Library Services', equipment:['Individual desks'], available:false},
+        {id:'r-lib-q2', number:'Q2', type:'Silent Study Zone', capacity:50, dept:'Library Services', equipment:['Individual desks'], available:true},
+        {id:'r-lib-arch', number:'AR', type:'Archive Room', capacity:4, dept:'Library Services', equipment:['Climate-controlled shelving'], available:true},
+        {id:'r-lib-print', number:'PR', type:'Printing Station', capacity:2, dept:'Library Services', equipment:['Printers','Scanner'], available:true}
+      ],
+      'Second Floor':[
+        {id:'r-lib-q1', number:'Q3', type:'Silent Study Zone', capacity:60, dept:'Library Services', equipment:['Individual desks'], available:true},
+        {id:'r-lib-media', number:'MR', type:'Media Room', capacity:12, dept:'Library Services', equipment:['Editing stations','Headphones'], available:false},
+        {id:'r-lib-research', number:'RC', type:'Research Commons', capacity:16, dept:'Library Services', equipment:['Shared tables','Reference desk'], available:true}
+      ]
+    },
+    offices:['Librarian Office', 'Archive Access Desk'], facilities:['wifi','projector']
+  },
+  { id:'red-hall', code:'Red Hall', name:'Red Hall', dept:'Lecture Halls', floors:['Ground Floor'], x:60, y:36,
+    description:'Secondary lecture hall, popular for club events and evening seminars.',
+    roomsByFloor:{ 'Ground Floor':[
+      {id:'r-red-1', number:'Hall 1', type:'Lecture Hall', capacity:150, dept:'Lecture Halls', equipment:['Projector','PA system'], available:true},
+      {id:'r-red-2', number:'CR', type:'Control Booth', capacity:2, dept:'Media Services', equipment:['Sound board','Lighting rig'], available:true},
+      {id:'r-red-3', number:'GR', type:'Green Room', capacity:6, dept:'Student Activities', equipment:['Mirrors','Seating'], available:false},
+      {id:'r-red-4', number:'ST', type:'Storage', capacity:0, dept:'Facilities', equipment:['Chairs','Staging'], available:true}
+    ] },
+    offices:[], facilities:['ac']
+  },
+  { id:'b8', code:'B8', name:'Science Labs Complex', dept:'Applied Sciences', floors:['Ground Floor','First Floor'], x:57, y:41,
+    description:'Wet labs for chemistry and biology, shared across first and second year science courses.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-b8-110', number:'101', type:'Physics Classroom', capacity:50, dept:'Physics', equipment:['Projector','Demo bench'], available:true},
+        {id:'r-b8-102', number:'102', type:'Physics Lab', capacity:24, dept:'Physics', equipment:['Optics bench','Sensors'], available:false},
+        {id:'l-b8-1', number:'Lab 1', type:'Chemistry Lab', capacity:24, dept:'Chemistry', equipment:['Fume hoods','Safety showers'], available:true},
+        {id:'l-b8-2', number:'Lab 2', type:'Chemistry Prep Room', capacity:6, dept:'Chemistry', equipment:['Storage cabinets','Prep bench'], available:true}
+      ],
+      'First Floor':[
+        {id:'l-b8-5', number:'Lab 5', type:'Biology Lab', capacity:24, dept:'Biology', equipment:['Microscopes','Incubators'], available:true},
+        {id:'l-b8-6', number:'Lab 6', type:'Microbiology Lab', capacity:20, dept:'Biology', equipment:['Autoclave','Biosafety cabinet'], available:false},
+        {id:'r-b8-201', number:'201', type:'Classroom', capacity:40, dept:'Applied Sciences', equipment:['Projector','Whiteboard'], available:true}
+      ]
+    },
+    offices:['Lab Safety Office'], facilities:['ac']
+  },
+  { id:'b25', code:'B25', name:'B25', dept:'General Faculty', floors:['Ground Floor','First Floor'], x:68, y:39,
+    description:'Classroom and small-lab building on the east side of the academic core.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-b25-101', number:'101', type:'Classroom', capacity:40, dept:'General Faculty', equipment:['Projector','Whiteboard'], available:false},
+        {id:'r-b25-102', number:'102', type:'Classroom', capacity:36, dept:'General Faculty', equipment:['Whiteboard'], available:true},
+        {id:'l-b25-8', number:'Lab 8', type:'Electronics Lab', capacity:22, dept:'Electrical Engineering', equipment:['Soldering stations','Test equipment'], available:true}
+      ],
+      'First Floor':[
+        {id:'r-b25-201', number:'201', type:'Classroom', capacity:36, dept:'General Faculty', equipment:['Projector'], available:true},
+        {id:'r-b25-202', number:'202', type:'Faculty Office', capacity:2, dept:'General Faculty', equipment:['Desk'], available:false}
+      ]
+    },
+    offices:['Faculty Office B25'], facilities:['projector']
+  },
+  { id:'b10', code:'B10', name:'Student Center', dept:'Student Services', floors:['Ground Floor','First Floor'], x:37, y:50,
+    description:'Cafeteria, prayer room, student clubs office and the main student services desk.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-b10-p1', number:'P1', type:'Prayer Room', capacity:80, dept:'Student Services', equipment:['Ablution area','Prayer mats'], available:true},
+        {id:'r-b10-cafe', number:'CF', type:'Cafeteria Hall', capacity:300, dept:'Student Services', equipment:['Six food vendors','Seating'], available:true},
+        {id:'r-b10-desk', number:'SD', type:'Student Services Desk', capacity:4, dept:'Student Services', equipment:['Service counter'], available:true},
+        {id:'r-b10-game', number:'GR', type:'Game Room', capacity:20, dept:'Student Activities', equipment:['Table tennis','Board games'], available:false}
+      ],
+      'First Floor':[
+        {id:'r-b10-12', number:'12', type:'Club Office A', capacity:15, dept:'Student Activities', equipment:['Shared desks','Lockers'], available:true},
+        {id:'r-b10-13', number:'13', type:'Club Office B', capacity:15, dept:'Student Activities', equipment:['Shared desks'], available:false},
+        {id:'r-b10-14', number:'14', type:'Multipurpose Room', capacity:40, dept:'Student Activities', equipment:['Movable furniture','Projector'], available:true}
+      ]
+    },
+    offices:['Student Services Desk', 'Student Activities Office'], facilities:['wifi','ac']
+  },
+  { id:'b9', code:'B9', name:'Medical Center', dept:'Campus Health', floors:['Ground Floor'], x:57, y:49,
+    description:'On-campus clinic for minor treatment, first aid, and stabilization before hospital transfer.',
+    roomsByFloor:{ 'Ground Floor':[
+      {id:'r-b9-1', number:'1', type:'Treatment Room', capacity:2, dept:'Campus Health', equipment:['First aid','Exam table'], available:true},
+      {id:'r-b9-2', number:'2', type:'Treatment Room', capacity:2, dept:'Campus Health', equipment:['Exam table','Vitals monitor'], available:false},
+      {id:'r-b9-3', number:'PH', type:'Pharmacy Counter', capacity:2, dept:'Campus Health', equipment:['Medication cabinet'], available:true},
+      {id:'r-b9-4', number:'WA', type:'Waiting Area', capacity:12, dept:'Campus Health', equipment:['Seating'], available:true}
+    ] },
+    offices:['Campus Nurse Office'], facilities:['ac']
+  },
+  { id:'green-hall', code:'Green Hall', name:'Green Hall', dept:'Multipurpose', floors:['Ground Floor','First Floor'], x:66, y:53,
+    description:'Multipurpose hall used for sports, orientation days and large student events.',
+    roomsByFloor:{
+      'Ground Floor':[
+        {id:'r-green-1', number:'Hall A', type:'Multipurpose Hall', capacity:200, dept:'Athletics', equipment:['Court markings','Bleachers'], available:true},
+        {id:'r-green-2', number:'LR-A', type:'Locker Room A', capacity:30, dept:'Athletics', equipment:['Lockers','Showers'], available:true},
+        {id:'r-green-3', number:'LR-B', type:'Locker Room B', capacity:30, dept:'Athletics', equipment:['Lockers','Showers'], available:false}
+      ],
+      'First Floor':[
+        {id:'r-green-4', number:'Hall B', type:'Fitness Studio', capacity:40, dept:'Athletics', equipment:['Mirrors','Free weights'], available:true},
+        {id:'r-green-5', number:'MR', type:'Meeting Room', capacity:12, dept:'Events Office', equipment:['Conference table'], available:true}
+      ]
+    },
+    offices:['Events Office'], facilities:['ac']
+  }
+];
+
+const SERVICES = [
+  { id:'gate-main', name:'Main Gate', category:'gate', x:50, y:3, description:'Primary vehicle and pedestrian entrance at the north edge of campus.' },
+  { id:'gate-g2', name:'G2 Gate', category:'gate', x:97, y:45, description:'Secondary gate on the east ring road, closest to the College of Engineering.' },
+  { id:'parking-north', name:'North Parking', category:'parking', x:60, y:3, description:'Visitor and staff parking just inside the Main Gate.' },
+  { id:'parking-b', name:'East Parking', category:'parking', x:88, y:38, description:'Student parking near the G2 Gate ring road.' },
+  { id:'atm-1', name:'ATM - Student Center', category:'atm', x:38, y:53, description:'National Bank ATM, ground floor of the Student Center.' },
+  { id:'atm-2', name:'ATM - Library', category:'atm', x:50, y:44, description:'Cash machine near the library main entrance.' },
+  { id:'wc-1', name:'Restrooms - B7', category:'restroom', x:40, y:44, description:'Accessible restrooms on floors 1 and 3.' },
+  { id:'wc-2', name:'Restrooms - Student Center', category:'restroom', x:34, y:52, description:'Accessible restrooms on ground floor.' },
+  { id:'prayer-west', name:'Prayer Hall - West', category:'service', x:13, y:68, description:'Dedicated prayer hall on the west side of campus, near student housing.' },
+  { id:'prayer-east', name:'Prayer Hall - East', category:'service', x:78, y:68, description:'Dedicated prayer hall on the east side of campus.' },
+  { id:'plaza', name:'Central Plaza', category:'service', x:75, y:87, description:'The circular E-JUST plaza \u2014 orientation days, graduation photos, and evening events.' },
+  { id:'dorms', name:'Student Housing', category:'service', x:15, y:80, description:'On-campus dormitory blocks, south-west corner of campus.' }
+];
+
+const DOCTORS = [
+  { id:'d1', name:'Dr. Ahmed Hassan', dept:'Computer Science', building:'b7', room:'305', hours:'Sun & Tue, 11:00\u201313:00', email:'a.hassan@ejust.edu.eg' },
+  { id:'d2', name:'Dr. Laila Mansour', dept:'Cybersecurity', building:'b7', room:'Lab 3', hours:'Mon & Wed, 10:00\u201312:00', email:'l.mansour@ejust.edu.eg' },
+  { id:'d3', name:'Dr. Youssef Adly', dept:'Mechanical Engineering', building:'coe', room:'204', hours:'Sun & Thu, 09:00\u201311:00', email:'y.adly@ejust.edu.eg' },
+  { id:'d4', name:'Dr. Nourhan Saeed', dept:'Electrical Engineering', building:'coe', room:'305', hours:'Tue & Wed, 13:00\u201315:00', email:'n.saeed@ejust.edu.eg' },
+  { id:'d5', name:'Dr. Omar Khalil', dept:'Chemistry', building:'b8', room:'Lab 1', hours:'Mon, 09:00\u201312:00', email:'o.khalil@ejust.edu.eg' },
+  { id:'d6', name:'Dr. Salma Rageh', dept:'Artificial Intelligence', building:'b7', room:'102', hours:'Sun & Tue, 14:00\u201316:00', email:'s.rageh@ejust.edu.eg' },
+  { id:'d7', name:'Dr. Karim Fathy', dept:'Civil Engineering', building:'coe', room:'204', hours:'Wed & Thu, 10:00\u201312:00', email:'k.fathy@ejust.edu.eg' },
+  { id:'d8', name:'Dr. Mariam Adel', dept:'Biology', building:'b8', room:'Lab 5', hours:'Mon & Sun, 11:00\u201313:00', email:'m.adel@ejust.edu.eg' },
+  { id:'d9', name:'Dean Prof. Hany Zaki', dept:'Dean of Engineering', building:'coe', room:'410', hours:'By appointment only', email:'dean.eng@ejust.edu.eg' }
+];
+
+const VISITOR_LINKS = [
+  {label:'Admissions', ic:'building', target:{type:'building', id:'b18'}},
+  {label:'Registration', ic:'building', target:{type:'building', id:'b18'}},
+  {label:'Library', ic:'library', target:{type:'building', id:'library'}},
+  {label:'Medical Center', ic:'medical', target:{type:'building', id:'b9'}},
+  {label:'Parking', ic:'parking', target:{type:'service', id:'parking-north'}},
+  {label:'Food Court', ic:'building', target:{type:'building', id:'b10'}},
+  {label:'Prayer Areas', ic:'service', target:{type:'service', id:'prayer-west'}},
+  {label:'Emergency Contacts', ic:'help', target:{type:'help'}}
+];
+
+const TOUR_STOPS = [
+  {title:'Main Gate', body:"Every visit starts here at the north entrance. Show your ID to campus security and you're in.", ref:'gate-main'},
+  {title:'Administration Building (B18)', body:'Admissions, registration and finance all live here. If you\u2019re not sure where to go, start here.', ref:'b18'},
+  {title:'Central Library', body:'Open to visitors with a day pass from the front desk. Quiet floors are 2 and 3.', ref:'library'},
+  {title:'Student Center (B10)', body:'Cafeteria, prayer room, and the student services desk \u2014 the social heart of campus.', ref:'b10'},
+  {title:'Medical Center (B9)', body:'For anything urgent, this is the fastest place on campus to get help.', ref:'b9'}
+];
+
+const FAQS = [
+  {q:'How do I find a specific professor\u2019s office?', a:'Open Directory from the top bar, search by name or department, and tap their profile. It shows the exact building, room, office hours, and a walking route.'},
+  {q:'Can I use this without a student account?', a:'Yes. Visitors, guests and parents can search and navigate without signing in. Saved places stay on this device only.'},
+  {q:'What if a room shows as "in use"?', a:'That reflects the current class schedule. Check back at the top of the next hour, or ask the building\u2019s front desk for an open alternative.'},
+  {q:'Are the routes wheelchair-accessible?', a:'Switch to the Golf Cart tab on the Directions page to call a cart to your location \u2014 it\u2019s free and covers the whole campus.'},
+  {q:'How current is the building information?', a:'Room and office data is reviewed each semester. If something looks wrong, use the feedback link in Settings.'}
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  route:{name:'home', params:{}},
+  layers:{building:true, library:true, medical:true, service:false, parking:false, gate:true, restroom:false, atm:false},
+  saved:[], recent:[], sheetPin:null, tourStep:-1, savedTab:'all', resultTab:'all', mapZoom:1, roomFilter:'all',
+  golfCartStatus:'idle', golfCartDriver:null, golfCartNumber:null, golfCartEta:null,
+  profile:{name:'Guest User', type:'Visitor', email:'guest@ejust.edu.eg'},
+  settings:{notifications:true, accessibility:false, arabic:false, metric:true, darkMode:false, classReminders:false},
+
+  auth:{loggedIn:false, role:null}, /* role: 'student' | 'guest' */
+  stats:{buildingsVisited:new Set(), roomsViewed:0, doctorsViewed:0, golfCartsRequested:0, tourCompleted:false, roomsBooked:0, scheduleAdded:false},
+  unlockedBadges:new Set(),
+  schedule:[], /* {id, day, time, course, buildingId, room} */
+  bookings:[], /* {id, roomId, buildingId, slot} */
+  occupancy:{}, /* roomId -> {base, youIn} */
+  qrScan:{open:false, roomId:null, capacity:null, phase:'scanning'}, /* fake QR check-in modal */
+  lastNotifiedClassKey:null
+};
+
+/* lightweight bilingual dictionary — toggled from Settings > Arabic interface */
+const DICT = {
+  en:{home:'Home', map:'Map', search:'Search', saved:'Saved', more:'More', directory:'Directory', explore:'Explore', help:'Help',
+      heroTitle:'Find your way at E-JUST', heroSub:'Your smart guide to buildings, rooms, labs, doctors and campus services.',
+      savedTitle:'My Saved Places', mapTitle:'Show on map', directionsTitle:'Directions', doctorsTitle:'Doctors on Campus'},
+  ar:{home:'\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629', map:'\u0627\u0644\u062e\u0631\u064a\u0637\u0629', search:'\u0628\u062d\u062b', saved:'\u0627\u0644\u0645\u062d\u0641\u0648\u0638\u0627\u062a', more:'\u0627\u0644\u0645\u0632\u064a\u062f', directory:'\u0627\u0644\u062f\u0644\u064a\u0644', explore:'\u0627\u0633\u062a\u0643\u0634\u0641', help:'\u0645\u0633\u0627\u0639\u062f\u0629',
+      heroTitle:'\u062c\u062f \u0637\u0631\u064a\u0642\u0643 \u0641\u064a \u0627\u0644\u062c\u0627\u0645\u0639\u0629', heroSub:'\u062f\u0644\u064a\u0644\u0643 \u0627\u0644\u0630\u0643\u064a \u0644\u0644\u0645\u0628\u0627\u0646\u064a \u0648\u0627\u0644\u0642\u0627\u0639\u0627\u062a \u0648\u0627\u0644\u0645\u0639\u0627\u0645\u0644 \u0648\u0627\u0644\u062e\u062f\u0645\u0627\u062a.',
+      savedTitle:'\u0623\u0645\u0627\u0643\u0646\u064a \u0627\u0644\u0645\u062d\u0641\u0648\u0638\u0629', mapTitle:'\u0625\u0638\u0647\u0627\u0631 \u0639\u0644\u0649 \u0627\u0644\u062e\u0631\u064a\u0637\u0629', directionsTitle:'\u0627\u0644\u0627\u062a\u062c\u0627\u0647\u0627\u062a', doctorsTitle:'\u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0641\u064a \u0627\u0644\u062c\u0627\u0645\u0639\u0629'}
+};
+function t(key){ return (state.settings.arabic ? DICT.ar : DICT.en)[key] || key; }
+function fmtDist(m){
+  if(state.settings.metric) return `${m} m`;
+  const ft = Math.round(m*3.281);
+  return `${ft} ft`;
+}
+function distFromGate(placeId){
+  const places = allPlaces();
+  const gate = places.find(p=>p.id==='gate-main');
+  const target = places.find(p=>p.id===placeId);
+  if(!gate || !target) return 120;
+  const dx=Math.abs(gate.x-target.x), dy=Math.abs(gate.y-target.y);
+  return Math.max(40, Math.round(Math.sqrt(dx*dx+dy*dy)*8));
+}
+
+function allPlaces(){
+  const bldgs = BUILDINGS.map(b=>{
+    let cat = 'building';
+    if(b.id==='library') cat='library';
+    if(b.id==='b9') cat='medical';
+    return {id:b.id, name:b.name.replace(/&amp;/g,'&'), category:cat, code:b.code, x:b.x, y:b.y, sub:b.dept};
+  });
+  const svc = SERVICES.map(s=>({id:s.id, name:s.name, category:(s.category==='atm'?'atm':(s.category==='gate'?'gate':(s.category==='parking'?'parking':(s.category==='restroom'?'restroom':'service')))), x:s.x, y:s.y, sub:s.description}));
+  return [...bldgs, ...svc];
+}
+function findBuilding(id){ return BUILDINGS.find(b=>b.id===id); }
+function findDoctor(id){ return DOCTORS.find(d=>d.id===id); }
+function findService(id){ return SERVICES.find(s=>s.id===id); }
+function findRoomAnywhere(roomId){
+  for(const b of BUILDINGS){
+    for(const fl of b.floors){
+      const r = (b.roomsByFloor[fl]||[]).find(r=>r.id===roomId);
+      if(r) return {room:r, building:b, floor:fl};
+    }
+  }
+  return null;
+}
+function initialsOf(name){ return name.split(' ').filter(w=>w[0]===w[0].toUpperCase() && w.length>1).slice(-2).map(w=>w[0]).join(''); }
+
+/* ============================================================
+   ROUTER / HELPERS
+   ============================================================ */
+const navHistory = [];
+let _suppressHistoryPush = false;
+function navigate(name, params={}){
+  if(!_suppressHistoryPush && state.route && state.route.name && state.route.name!==name){
+    navHistory.push({name: state.route.name, params: state.route.params});
+    if(navHistory.length>50) navHistory.shift();
+  }
+  if(name==='map' && state.route.name!=='map'){ mapPinsAnimated = false; }
+  _suppressHistoryPush = false;
+  state.route = {name, params};
+  if(name==='building' && params.id){ state.stats.buildingsVisited.add(params.id); checkBadges(); }
+  if(name==='room' && params.id){ state.stats.roomsViewed++; checkBadges(); }
+  if(name==='doctor' && params.id){ state.stats.doctorsViewed++; checkBadges(); }
+  render();
+  const c = document.getElementById('content'); if(c) c.scrollTop = 0;
+  window.scrollTo(0,0);
+}
+/* used by the Android WebView wrapper's hardware back button; returns true if it navigated, false if there's nowhere left to go (so the native shell can exit/minimize) */
+function goBackInApp(){
+  if(state.qrScan && state.qrScan.open){ cancelQrScan(); return true; }
+  if(state.tourStep>=0){ state.tourStep=-1; render(); return true; }
+  if(navHistory.length===0) return false;
+  const prev = navHistory.pop();
+  _suppressHistoryPush = true;
+  navigate(prev.name, prev.params);
+  return true;
+}
+window.goBackInApp = goBackInApp;
+function login(role, profile){
+  state.auth.loggedIn = true;
+  state.auth.role = role;
+  if(profile) state.profile = profile;
+  navHistory.length = 0;
+  document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('app-shell').classList.add('active');
+  navigate('home');
+  applyChrome();
+  saveState();
+}
+function logout(){
+  state.auth = {loggedIn:false, role:null};
+  state.profile = {name:'Guest User', type:'Visitor', email:'guest@ejust.edu.eg'};
+  navHistory.length = 0;
+  document.getElementById('app-shell').classList.remove('active');
+  document.getElementById('screen-login').classList.remove('hidden');
+  saveState();
+}
+
+/* ============================================================
+   PERSISTENCE — localStorage
+   ============================================================ */
+const STORAGE_KEY = 'ejust-campus-map-v1';
+function saveState(){
+  try{
+    const snapshot = {
+      auth: state.auth,
+      profile: state.profile,
+      saved: state.saved,
+      recent: state.recent,
+      schedule: state.schedule,
+      bookings: state.bookings,
+      occupancy: state.occupancy,
+      layers: state.layers,
+      settings: state.settings,
+      unlockedBadges: Array.from(state.unlockedBadges),
+      stats: { ...state.stats, buildingsVisited: Array.from(state.stats.buildingsVisited) },
+      lastNotifiedClassKey: state.lastNotifiedClassKey
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  }catch(e){ /* storage unavailable (private mode, quota, etc) — app still works, just won't persist */ }
+}
+function saveStateDebounced(){
+  clearTimeout(window._saveTimer);
+  window._saveTimer = setTimeout(saveState, 200);
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const snap = JSON.parse(raw);
+    if(snap.auth) state.auth = snap.auth;
+    if(snap.profile) state.profile = snap.profile;
+    if(snap.saved) state.saved = snap.saved;
+    if(snap.recent) state.recent = snap.recent;
+    if(snap.schedule) state.schedule = snap.schedule;
+    if(snap.bookings) state.bookings = snap.bookings;
+    if(snap.occupancy) state.occupancy = snap.occupancy;
+    if(snap.layers) state.layers = { ...state.layers, ...snap.layers };
+    if(snap.settings) state.settings = { ...state.settings, ...snap.settings };
+    if(snap.unlockedBadges) state.unlockedBadges = new Set(snap.unlockedBadges);
+    if(snap.stats) state.stats = { ...state.stats, ...snap.stats, buildingsVisited: new Set(snap.stats.buildingsVisited||[]) };
+    if(snap.lastNotifiedClassKey) state.lastNotifiedClassKey = snap.lastNotifiedClassKey;
+    return true;
+  }catch(e){ return false; }
+}
+function resetAllData(){
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  location.reload();
+}
+function showToast(msg, undoFn){
+  const t = document.getElementById('toast');
+  t.innerHTML = `<span>${msg}</span>` + (undoFn ? ` <button id="toast-undo" style="background:none;border:none;color:var(--gold);font-weight:700;font-size:12.5px;margin-left:8px;">Undo</button>` : '');
+  t.classList.add('show');
+  clearTimeout(window._tt); window._tt = setTimeout(()=>t.classList.remove('show'), 3200);
+  if(undoFn){ const btn = document.getElementById('toast-undo'); if(btn) btn.onclick = ()=>{ undoFn(); t.classList.remove('show'); }; }
+}
+function toggleSave(id, name, kind){
+  const idx = state.saved.findIndex(s=>s.id===id);
+  if(idx>-1){
+    const removed = state.saved[idx];
+    state.saved.splice(idx,1);
+    showToast('Removed from saved places', ()=>{ state.saved.push(removed); render(); });
+  } else{
+    state.saved.push({id, name, kind});
+    showToast('Saved to your places');
+  }
+  render();
+}
+function isSaved(id){ return state.saved.some(s=>s.id===id); }
+function addRecent(term){ state.recent = state.recent.filter(r=>r!==term); state.recent.unshift(term); state.recent = state.recent.slice(0,10); }
+
+const GOLF_DRIVERS = ['Ahmed Fathy', 'Mostafa Rady', 'Sara Emad', 'Youssef Nabil', 'Nourhan Samy'];
+function requestGolfCart(){
+  state.golfCartStatus = 'searching';
+  render();
+  clearTimeout(window._golfTimer);
+  window._golfTimer = setTimeout(()=>{
+    state.golfCartDriver = GOLF_DRIVERS[Math.floor(Math.random()*GOLF_DRIVERS.length)];
+    state.golfCartNumber = 'GC-' + (10+Math.floor(Math.random()*89));
+    state.golfCartEta = 3 + Math.floor(Math.random()*5);
+    state.golfCartStatus = 'assigned';
+    state.stats.golfCartsRequested++;
+    checkBadges();
+    render();
+    showToast(`${state.golfCartNumber} is on its way`);
+  }, 1700);
+}
+function cancelGolfCart(){
+  clearTimeout(window._golfTimer);
+  state.golfCartStatus='idle'; state.golfCartDriver=null; state.golfCartNumber=null; state.golfCartEta=null;
+  render();
+  showToast('Golf cart request cancelled');
+}
+
+/* ============================================================
+   GAMIFICATION — BADGES
+   ============================================================ */
+const BADGES = [
+  {id:'tour', name:'Campus Explorer', desc:'Completed the guided campus tour', icon:'events', check:s=>s.tourCompleted},
+  {id:'wanderer', name:'Wanderer', desc:'Visited 5 different buildings', icon:'building', check:s=>s.buildingsVisited.size>=5},
+  {id:'bookworm', name:'Bookworm', desc:'Checked out the Central Library', icon:'library', check:s=>s.buildingsVisited.has('library')},
+  {id:'healthy', name:'Health Conscious', desc:'Found the Medical Center', icon:'medical', check:s=>s.buildingsVisited.has('b9')},
+  {id:'cart', name:'Cart Caller', desc:'Requested a golf cart', icon:'golfcart', check:s=>s.golfCartsRequested>=1},
+  {id:'roomfinder', name:'Room Finder', desc:'Looked up a room or lab', icon:'room', check:s=>s.roomsViewed>=1},
+  {id:'connected', name:'Well Connected', desc:'Looked up a professor', icon:'doctor', check:s=>s.doctorsViewed>=1},
+  {id:'collector', name:'Collector', desc:'Saved 3 places', icon:'bookmark', check:()=>state.saved.length>=3},
+  {id:'planner', name:'Planner', desc:'Added a class to your schedule', icon:'events', check:s=>s.scheduleAdded},
+  {id:'booker', name:'Room Booker', desc:'Booked a study room', icon:'room', check:s=>s.roomsBooked>=1}
+];
+
+/* fake classmates for the leaderboard — badge counts are fixed so ranking feels stable across a session */
+const LEADERBOARD_STUDENTS = [
+  {name:'Nourhan Samy', badges:9, dept:'Cybersecurity'},
+  {name:'Youssef Nabil', badges:7, dept:'Computer Science'},
+  {name:'Sara Emad', badges:6, dept:'Electrical Engineering'},
+  {name:'Ahmed Fathy', badges:4, dept:'Mechanical Engineering'},
+  {name:'Mostafa Rady', badges:3, dept:'Artificial Intelligence'},
+  {name:'Laila Mansour', badges:2, dept:'Civil Engineering'},
+  {name:'Omar Khalil', badges:1, dept:'Chemistry'}
+];
+function checkBadges(){
+  BADGES.forEach(b=>{
+    if(!state.unlockedBadges.has(b.id) && b.check(state.stats)){
+      state.unlockedBadges.add(b.id);
+      showBadgeUnlock(b);
+    }
+  });
+}
+function showBadgeUnlock(badge){
+  const el = document.createElement('div');
+  el.className = 'badge-toast';
+  el.innerHTML = `<div class="badge-toast-ic">${iconFor(badge.icon,20,'#fff')}</div><div><b>Badge unlocked</b><span>${badge.name}</span></div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(), 350); }, 3200);
+}
+
+/* ============================================================
+   STUDY ROOMS — booking & live occupancy
+   ============================================================ */
+const STUDY_ROOM_TYPES = ['Group Study Room', 'Silent Study Zone'];
+const BOOKING_SLOTS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
+function isStudyRoom(room){ return STUDY_ROOM_TYPES.includes(room.type); }
+function getOccupancy(roomId, capacity){
+  if(!state.occupancy[roomId]){
+    state.occupancy[roomId] = { base: Math.max(1, Math.round(capacity*(0.15+Math.random()*0.45))), youIn:false };
+  }
+  return state.occupancy[roomId];
+}
+function toggleCheckIn(roomId, capacity){
+  const occ = getOccupancy(roomId, capacity);
+  occ.youIn = !occ.youIn;
+  showToast(occ.youIn ? 'Checked in \u2014 have a good session' : 'Checked out');
+  render();
+}
+
+/* ============================================================
+   QR CHECK-IN (fake camera scan, same result as manual check-in)
+   ============================================================ */
+function openQrScan(roomId, capacity){
+  clearTimeout(window._qrTimer1); clearTimeout(window._qrTimer2);
+  state.qrScan = {open:true, roomId, capacity:parseInt(capacity,10), phase:'scanning'};
+  render();
+  window._qrTimer1 = setTimeout(()=>{
+    const occ = getOccupancy(roomId, parseInt(capacity,10));
+    occ.youIn = true;
+    state.qrScan.phase = 'success';
+    render();
+    window._qrTimer2 = setTimeout(()=>{
+      state.qrScan.open = false;
+      render();
+      showToast('Checked in \u2014 have a good session');
+    }, 1200);
+  }, 1800);
+}
+function cancelQrScan(){
+  clearTimeout(window._qrTimer1); clearTimeout(window._qrTimer2);
+  state.qrScan.open = false;
+  render();
+}
+function renderQrScanOverlay(){
+  const phase = state.qrScan.phase;
+  return `<div class="qr-overlay">
+    <div class="qr-modal">
+      ${phase==='scanning' ? `<button class="qr-close" data-action="qr-cancel">&times;</button>` : ''}
+      ${phase==='scanning' ? `
+        <div class="qr-viewfinder">
+          <svg class="qr-code-art" viewBox="0 0 90 90">
+            <rect width="90" height="90" fill="#fff"/>
+            ${[[4,4],[4,10],[4,58],[10,4],[10,10],[10,58],[16,4],[16,10],[16,58],[4,16],[10,16],[16,16],[58,4],[58,10],[58,58],[64,4],[64,10],[64,58],[70,4],[70,10],[70,58],[58,16],[64,16],[70,16],[28,28],[34,28],[40,28],[28,34],[40,34],[28,40],[34,40],[40,40],[50,50],[56,50],[62,50],[68,50],[74,50],[50,56],[62,56],[74,56],[50,62],[56,62],[68,62],[28,62],[34,68],[28,74],[40,74],[46,46],[46,64],[46,76],[76,76],[70,76],[64,70],[58,70]].map(([x,y])=>`<rect x="${x}" y="${y}" width="6" height="6" fill="#132226"/>`).join('')}
+          </svg>
+          <div class="qr-scanline"></div>
+          <div class="qr-corner tl"></div><div class="qr-corner tr"></div><div class="qr-corner bl"></div><div class="qr-corner br"></div>
+        </div>
+        <p class="qr-status">Point your camera at the door code&hellip;</p>
+        <p class="qr-substatus">Scanning for room QR</p>
+      ` : `
+        <div class="qr-success-ic">${iconFor('bookmark',26,'#fff')}</div>
+        <p class="qr-status">Code recognized</p>
+        <p class="qr-substatus">Checking you in&hellip;</p>
+      `}
+    </div>
+  </div>`;
+}
+function slotStatus(roomId, slot){
+  const b = state.bookings.find(x=>x.roomId===roomId && x.slot===slot);
+  if(!b) return 'free';
+  return b.mine ? 'mine' : 'other';
+}
+function toggleBookSlot(roomId, buildingId, slot){
+  const existing = state.bookings.find(x=>x.roomId===roomId && x.slot===slot);
+  if(existing && existing.mine){
+    state.bookings = state.bookings.filter(x=>x!==existing);
+    showToast(`Cancelled your ${slot} booking`);
+  } else if(existing){
+    showToast('That slot is already booked');
+    return;
+  } else {
+    state.bookings.push({id:'bk-'+Date.now(), roomId, buildingId, slot, mine:true});
+    state.stats.roomsBooked++;
+    checkBadges();
+    showToast(`Booked ${slot} \u2014 ${slot.split(':')[0]}:00 to ${(parseInt(slot)+1)}:00`);
+  }
+  render();
+}
+
+/* ============================================================
+   MY SCHEDULE
+   ============================================================ */
+const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function addScheduleEntry(day, time, course, buildingId, room){
+  if(!day || !time || !course || !buildingId) return false;
+  state.schedule.push({id:'sch-'+Date.now()+Math.random().toString(36).slice(2,5), day, time, course, buildingId, room:room||''});
+  state.stats.scheduleAdded = true;
+  checkBadges();
+  scheduleClassReminder();
+  return true;
+}
+function parseScheduleText(text){
+  let added = 0, failed = 0;
+  text.split('\n').map(l=>l.trim()).filter(Boolean).forEach(line=>{
+    const parts = line.split(',').map(p=>p.trim());
+    if(parts.length<4){ failed++; return; }
+    const [day, time, course, buildingRaw, room] = parts;
+    const dayNorm = WEEKDAYS.find(d=>d.toLowerCase()===day.slice(0,3).toLowerCase());
+    const building = BUILDINGS.find(b=> b.code.toLowerCase()===buildingRaw.toLowerCase() || b.id.toLowerCase()===buildingRaw.toLowerCase() || b.name.toLowerCase().includes(buildingRaw.toLowerCase()));
+    if(!dayNorm || !building || !/^\d{1,2}:\d{2}$/.test(time)){ failed++; return; }
+    addScheduleEntry(dayNorm, time, course, building.id, room||'');
+    added++;
+  });
+  return {added, failed};
+}
+function getNextClass(){
+  if(!state.schedule.length) return null;
+  const now = new Date();
+  const nowDay = now.getDay(), nowMins = now.getHours()*60+now.getMinutes();
+  let best = null, bestDelta = Infinity;
+  state.schedule.forEach(cls=>{
+    const clsDay = WEEKDAYS.indexOf(cls.day);
+    const [h,m] = cls.time.split(':').map(Number);
+    const clsMins = h*60+m;
+    let dayDelta = clsDay - nowDay;
+    if(dayDelta<0 || (dayDelta===0 && clsMins<=nowMins)) dayDelta += 7;
+    const totalDelta = dayDelta*1440 + (clsMins-nowMins);
+    if(totalDelta < bestDelta){ bestDelta = totalDelta; best = cls; }
+  });
+  return best ? {cls:best, minsAway:bestDelta} : null;
+}
+
+/* ============================================================
+   PUSH-STYLE CLASS REMINDERS (real Notification API)
+   ============================================================ */
+function requestNotifPermission(){
+  /* running inside the native Android wrapper — OS handles the permission prompt at app launch, notifications go through AndroidBridge instead of the web Notification API (which doesn't work on file:// origins anyway) */
+  if(window.AndroidBridge && window.AndroidBridge.postNotification) return Promise.resolve('granted');
+  if(!('Notification' in window)){
+    showToast('This browser doesn\u2019t support notifications');
+    return Promise.resolve('unsupported');
+  }
+  if(Notification.permission==='granted') return Promise.resolve('granted');
+  if(Notification.permission==='denied'){
+    showToast('Notifications are blocked in your browser settings');
+    return Promise.resolve('denied');
+  }
+  return Notification.requestPermission().then(perm=>{
+    if(perm!=='granted') showToast('Notifications weren\u2019t enabled \u2014 you\u2019ll still see in-app reminders');
+    return perm;
+  });
+}
+function scheduleClassReminder(){
+  clearTimeout(window._reminderTimer);
+  if(!state.settings.classReminders) return;
+  const next = getNextClass();
+  if(!next) return;
+  const msUntilReminder = (next.minsAway-10)*60000;
+  if(next.minsAway<=10){
+    fireClassReminder(next);
+  } else {
+    window._reminderTimer = setTimeout(()=>{ fireClassReminder(next); scheduleClassReminder(); }, Math.max(1000,msUntilReminder));
+  }
+}
+function fireClassReminder(next){
+  const cls = next.cls;
+  const key = cls.id+'@'+cls.day+cls.time;
+  if(state.lastNotifiedClassKey===key) return;
+  state.lastNotifiedClassKey = key;
+  const b = findBuilding(cls.buildingId);
+  const place = b ? b.name.replace(/&amp;/g,'&') + (cls.room?', Room '+cls.room:'') : '';
+  const title = `${cls.course} starts in ${Math.max(0,next.minsAway)} min`;
+  if(window.AndroidBridge && window.AndroidBridge.postNotification){
+    try{ window.AndroidBridge.postNotification(title, place); }catch(e){}
+  } else if('Notification' in window && Notification.permission==='granted'){
+    try{ new Notification(title, {body: place, tag:key}); }catch(e){}
+  }
+  showToast(`${title} \u2014 ${place}`);
+  render();
+}
+
+function iconFor(kind, size=17, color='currentColor'){
+  const icons = {
+    building:`<path d="M4 21V7l8-4 8 4v14"/><path d="M9 21V11h6v10"/>`,
+    doctor:`<circle cx="12" cy="8" r="3.4"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/>`,
+    library:`<path d="M4 4h6v16H4z"/><path d="M14 4h6v16h-6z"/>`,
+    medical:`<path d="M12 3v18M3 12h18" stroke-width="3"/>`,
+    service:`<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>`,
+    parking:`<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 16V8h3.5a2.5 2.5 0 1 1 0 5H9"/>`,
+    room:`<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/>`,
+    lab:`<path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3"/><path d="M9 3h6"/>`,
+    events:`<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>`,
+    help:`<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.9.4-1.5 1.1-1.5 2.2"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>`,
+    gate:`<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-8h6v8"/>`,
+    bookmark:`<path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>`,
+    walk:`<circle cx="13" cy="4.5" r="1.7"/><path d="M13 6.5v4l-3.5 3M13 8.5l3 3.5-1 5.5M9.5 13.5l-2 6M16 12l3 2.5-1 5"/>`,
+    golfcart:`<rect x="3" y="9" width="13" height="6" rx="1.4"/><path d="M5 9V5h7l3.5 4"/><path d="M16 12h4l1 3"/><circle cx="6.5" cy="18" r="1.7"/><circle cx="14.5" cy="18" r="1.7"/>`,
+    trophy:`<path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 5H4v2a4 4 0 0 0 4 4"/><path d="M16 5h4v2a4 4 0 0 1-4 4"/><path d="M12 13v4"/><path d="M9 21h6"/><path d="M10 17h4v4h-4z"/>`,
+    qrcode:`<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM19 19h2v2h-2z"/>`,
+    bell:`<path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z"/><path d="M10 19a2 2 0 0 0 4 0"/>`
+  };
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[kind]||icons.building}</svg>`;
+}
+
+/* ============================================================
+   MAP GEOMETRY
+   ============================================================ */
+const MAP_VB_W = 420, MAP_VB_H = 540;
+function svgX(x){ return (x/100*380)+20; }
+function svgY(y){ return (y/100*500)+20; }
+const SHORT_LABEL = {
+  'b18':'B18', 'coe':'COE', 'b26':'B26', 'blue-hall':'Blue Hall', 'b17':'B17', 'b7':'B7',
+  'library':'Library', 'red-hall':'Red Hall', 'b8':'B8', 'b25':'B25', 'b10':'B10', 'b9':'B9', 'green-hall':'Green Hall',
+  'gate-main':'Main Gate', 'gate-g2':'G2 Gate'
+};
+
+function campusBackdrop(){
+  return `
+    <rect width="${MAP_VB_W}" height="${MAP_VB_H}" fill="#F6F7F8"/>
+    <ellipse cx="65" cy="35" rx="55" ry="22" fill="#EBEDE6"/>
+    <ellipse cx="240" cy="42" rx="65" ry="24" fill="#EBEDE6"/>
+    <path d="M${svgX(50)} 22 L${svgX(50)} ${svgY(20)}" stroke="#DADDE0" stroke-width="11" fill="none"/>
+    <path d="M${svgX(50)} ${svgY(20)} Q${svgX(60)} ${svgY(30)} ${svgX(85)} ${svgY(45)} Q${svgX(97)} ${svgY(52)} ${svgX(97)} ${svgY(70)}" stroke="#DADDE0" stroke-width="11" fill="none"/>
+    <path d="M${svgX(50)} ${svgY(20)} Q${svgX(35)} ${svgY(35)} ${svgX(20)} ${svgY(55)} Q${svgX(12)} ${svgY(68)} ${svgX(15)} ${svgY(90)}" stroke="#DADDE0" stroke-width="9" fill="none"/>
+    <path d="M${svgX(20)} ${svgY(55)} L${svgX(80)} ${svgY(58)}" stroke="#DFE2DA" stroke-width="7" fill="none"/>
+    <rect x="${svgX(10)}" y="${svgY(72)}" width="${svgX(28)-svgX(10)}" height="${svgY(94)-svgY(72)}" rx="5" fill="#EDEEE8"/>
+    <g transform="translate(${svgX(75)},${svgY(87)})">
+      <circle r="19" fill="none" stroke="#C89A44" stroke-width="1.2"/>
+      <circle r="5" fill="#C89A44"/>
+    </g>
+    <rect x="${svgX(18)}" y="${svgY(22)}" width="${svgX(80)-svgX(18)}" height="${svgY(56)-svgY(22)}" rx="12" fill="#F0F1EA" opacity="0.6"/>
+  `;
+}
+
+/* Full detail render for the main Interactive Map: real building footprints
+   (sized by floor count) with persistent labels, not just anonymous dots. */
+let mapPinsAnimated = false;
+function renderMapSvg(){
+  const places = allPlaces();
+  const visible = places.filter(p=> state.layers[p.category]);
+  const animClass = mapPinsAnimated ? 'map-pin no-anim' : 'map-pin';
+  const pins = visible.map((p,idx)=>{
+    const cx=svgX(p.x), cy=svgY(p.y);
+    const color = CAT_COLOR[p.category]||CAT_COLOR.building;
+    const isFootprint = (p.category==='building' || p.category==='library' || p.category==='medical');
+    const label = SHORT_LABEL[p.id] || p.name;
+    const delay = mapPinsAnimated ? '' : `style="animation-delay:${Math.min(idx*22,300)}ms"`;
+    if(isFootprint){
+      const b = findBuilding(p.id);
+      const floors = b ? b.floors.length : 2;
+      const w = 24 + Math.min(floors,5)*3.4;
+      const h = 16 + Math.min(floors,5)*2.4;
+      return `<g class="${animClass}" data-pin="${p.id}" ${delay} transform="translate(${cx-w/2},${cy-h/2})">
+        <rect width="${w}" height="${h}" rx="4" fill="${color}" fill-opacity="0.16" stroke="${color}" stroke-width="1.6"/>
+        <text x="${w/2}" y="${h/2+3}" text-anchor="middle" font-size="8" fill="${color}" font-family="JetBrains Mono" font-weight="700">${(b?b.code:label).slice(0,5)}</text>
+        <text x="${w/2}" y="${h+10}" text-anchor="middle" font-size="6.6" fill="#6B7076" font-family="Inter">${label}</text>
+      </g>`;
+    }
+    return `<g class="${animClass}" data-pin="${p.id}" ${delay} transform="translate(${cx},${cy})">
+      <circle r="7" fill="${color}" stroke="#fff" stroke-width="1.8"/>
+      <text x="0" y="3" text-anchor="middle" font-size="7" fill="#fff" font-family="JetBrains Mono" font-weight="700">${CAT_LETTER[p.category]||'B'}</text>
+      ${SHORT_LABEL[p.id] ? `<text x="0" y="17" text-anchor="middle" font-size="6.6" fill="#6B7076" font-family="Inter">${SHORT_LABEL[p.id]}</text>` : ''}
+    </g>`;
+  }).join('');
+  let routeSvg = '';
+  if(state.route.name==='navigate' && state.route.params.from && state.route.params.to){
+    const fromP = places.find(p=>p.id===state.route.params.from), toP = places.find(p=>p.id===state.route.params.to);
+    if(fromP && toP){
+      const x1=svgX(fromP.x), y1=svgY(fromP.y), x2=svgX(toP.x), y2=svgY(toP.y), mx=(x1+x2)/2, my=(y1+y2)/2-16;
+      routeSvg = `<path class="route-line" d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}" stroke="#C8102E" stroke-width="2.6" fill="none"/>`;
+    }
+  }
+  mapPinsAnimated = true;
+  return `<svg viewBox="0 0 ${MAP_VB_W} ${MAP_VB_H}" style="transform:scale(${state.mapZoom||1}); transform-origin:center; transition:transform .2s;">${campusBackdrop()}${routeSvg}${pins}
+    <g class="${animClass} you" transform="translate(${svgX(50)},${svgY(9)})">
+      <circle class="pulse" r="7" fill="#C8102E" opacity="0.45"/>
+      <circle r="6" fill="#C8102E" stroke="#fff" stroke-width="2"/>
+    </g></svg>`;
+}
+function renderMapLegend(){
+  const items = [
+    {c:CAT_COLOR.building, l:'Buildings'}, {c:CAT_COLOR.medical, l:'Medical'}, {c:CAT_COLOR.gate, l:'Gates'},
+    {c:CAT_COLOR.service, l:'Services'}, {c:CAT_COLOR.parking, l:'Parking'}
+  ];
+  return `<div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px 4px 2px; font-size:10.5px; color:var(--ink-soft);">
+    ${items.map(it=>`<span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:9px; height:9px; border-radius:3px; background:${it.c}; display:inline-block;"></span>${it.l}</span>`).join('')}
+  </div>`;
+}
+function renderMiniMap(highlightIds){
+  const places = allPlaces();
+  const pins = places.map(p=>{
+    const cx=svgX(p.x), cy=svgY(p.y), active=highlightIds.includes(p.id);
+    const color = active ? '#C8102E' : (CAT_COLOR[p.category]||'#2B2E33');
+    return `<circle cx="${cx}" cy="${cy}" r="${active?9:4.5}" fill="${color}" stroke="#fff" stroke-width="1.4"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${MAP_VB_W} ${MAP_VB_H}" style="width:100%; display:block;">${campusBackdrop()}${pins}</svg>`;
+}
+function renderRouteMap(fromP, toP){
+  const x1=svgX(fromP.x), y1=svgY(fromP.y), x2=svgX(toP.x), y2=svgY(toP.y), mx=(x1+x2)/2, my=(y1+y2)/2-16;
+  return `<svg viewBox="0 0 ${MAP_VB_W} ${MAP_VB_H}" style="width:100%; display:block;">${campusBackdrop()}
+    <path d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}" stroke="#C8102E" stroke-width="2.6" stroke-dasharray="6 6" fill="none"/>
+    <circle cx="${x1}" cy="${y1}" r="7" fill="#2B2E33" stroke="#fff" stroke-width="2"/>
+    <circle cx="${x2}" cy="${y2}" r="7" fill="#C8102E" stroke="#fff" stroke-width="2"/>
+  </svg>`;
+}
+
+/* ============================================================
+   SEARCH INDEX
+   ============================================================ */
+function searchIndex(query){
+  const q = query.trim().toLowerCase();
+  if(!q) return [];
+  const results = [];
+  BUILDINGS.forEach(b=>{
+    const cleanName = b.name.replace(/&amp;/g,'&');
+    if(cleanName.toLowerCase().includes(q) || b.code.toLowerCase().includes(q) || b.dept.toLowerCase().includes(q)){
+      results.push({type:'building', id:b.id, buildingId:b.id, title:cleanName, sub:`${b.code} \u00b7 ${b.dept}`});
+    }
+    b.floors.forEach(fl=>{
+      (b.roomsByFloor[fl]||[]).forEach(r=>{
+        if(('room '+r.number).includes(q) || r.number.toLowerCase().includes(q) || r.dept.toLowerCase().includes(q) || r.type.toLowerCase().includes(q)){
+          results.push({type:'room', id:r.id, buildingId:b.id, title:`${r.type} ${r.number}`, sub:`${cleanName} \u00b7 ${fl}`});
+        }
+      });
+    });
+  });
+  DOCTORS.forEach(d=>{
+    if(d.name.toLowerCase().includes(q) || d.dept.toLowerCase().includes(q)){
+      results.push({type:'doctor', id:d.id, buildingId:d.building, title:d.name, sub:d.dept});
+    }
+  });
+  SERVICES.forEach(s=>{
+    if(s.name.toLowerCase().includes(q) || s.category.includes(q)){
+      results.push({type:'service', id:s.id, buildingId:s.id, title:s.name, sub:s.category});
+    }
+  });
+  return results;
+}
+function resultIcon(type){ return type==='room' ? 'room' : (type==='doctor' ? 'doctor' : (type==='service' ? 'service' : 'building')); }
+
+/* ============================================================
+   PAGE: HOME
+   ============================================================ */
+function renderHome(){
+  const recentSaved = state.saved.slice(-3).reverse();
+  const next = getNextClass();
+  return `
+  <div class="hero">
+    <h1 data-lbl="heroTitle" style="white-space:pre-line;">${t('heroTitle')}</h1>
+    <p data-lbl="heroSub">${t('heroSub')}</p>
+  </div>
+  ${next ? renderNextClassCard(next) : ''}
+  <div class="searchbar" data-nav="search">
+    ${iconFor('service',16,'#6B7076')}
+    <input readonly placeholder="Search doctor, building, room, lab..." style="pointer-events:none;">
+    <button>${iconFor('service',15,'#fff')}</button>
+  </div>
+  <div class="qgrid">
+    <button class="qcard" data-nav="map"><div class="qi">${iconFor('building')}</div><b>Buildings</b><span>View all buildings</span></button>
+    <button class="qcard" data-nav="doctors"><div class="qi">${iconFor('doctor')}</div><b>Doctors</b><span>Find &amp; visit</span></button>
+    <button class="qcard" data-nav="studyrooms"><div class="qi">${iconFor('room')}</div><b>Study Rooms</b><span>Live occupancy</span></button>
+    <button class="qcard" data-nav="schedule"><div class="qi">${iconFor('events')}</div><b>My Schedule</b><span>Classes &amp; walk time</span></button>
+    <button class="qcard" data-nav="badges"><div class="qi">${iconFor('bookmark')}</div><b>Badges</b><span>${state.unlockedBadges.size}/${BADGES.length} earned</span></button>
+    <button class="qcard" data-nav="visitor"><div class="qi">${iconFor('events')}</div><b>Visitor Guide</b><span>What's around</span></button>
+  </div>
+  ${recentSaved.length ? `
+  <div class="section-title">Continue where you left off</div>
+  <div class="card" style="padding:4px 12px; margin-bottom:16px;">
+    ${recentSaved.map(s=>`
+      <div class="res-row" data-action="open-saved" data-id="${s.id}" data-kind="${s.kind}">
+        <div class="res-ic" style="background:${CAT_COLOR[s.kind==='doctor'?'building':(s.kind==='service'?'service':'building')]}">${iconFor(s.kind==='doctor'?'doctor':(s.kind==='room'?'room':'building'),16,'#fff')}</div>
+        <div class="res-main"><b>${s.name}</b><span style="text-transform:capitalize;">${s.kind}</span></div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A9099" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>`).join('')}
+  </div>` : ''}
+  <div class="guide-card">
+    <h4>New to Campus?</h4>
+    <p>Find important places and get around easily.</p>
+    <button class="btn btn-primary btn-sm" data-action="start-tour">Start Guide</button>
+  </div>
+  `;
+}
+function renderNextClassCard(next){
+  const cls = next.cls;
+  const b = findBuilding(cls.buildingId);
+  const h = Math.floor(next.minsAway/60), m = next.minsAway%60;
+  const timeLabel = next.minsAway<1440 ? (h>0?`${h}h ${m}m`:`${m}m`) : `${cls.day} ${cls.time}`;
+  const walkMin = b ? Math.max(2, Math.round(distFromGate(b.id)/80)) : null;
+  const urgent = next.minsAway<=10;
+  return `<div class="next-class-card ${urgent?'urgent':''}" data-nav="navigate" data-to="${cls.buildingId}">
+    <div class="nc-label">${urgent ? iconFor('bell',11,'rgba(255,255,255,.85)')+' Leaving soon' : 'Next class'}</div>
+    <h4>${cls.course}</h4>
+    <div class="nc-meta">${b?b.name.replace(/&amp;/g,'&'):cls.buildingId}${cls.room?', Room '+cls.room:''} \u00b7 ${cls.day} ${cls.time}</div>
+    <div class="nc-stats">
+      <div class="nc-stat"><b>${timeLabel}</b><span>Starts in</span></div>
+      ${walkMin!==null ? `<div class="nc-stat"><b>${walkMin} min</b><span>Walk from gate</span></div>` : ''}
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: SEARCH (all-in-one)
+   ============================================================ */
+const POPULAR = [
+  {label:'Student Services', sub:'Building B10', ic:'building', q:'student center'},
+  {label:'Library', sub:'Central Building', ic:'library', q:'library'},
+  {label:'Computer Labs', sub:'Building B7', ic:'lab', q:'lab'},
+  {label:'Dr. Ahmed Hassan', sub:'Computer Science', ic:'doctor', q:'ahmed hassan'}
+];
+function renderSearch(){
+  return `
+  <h1 style="font-size:19px; margin-bottom:4px;">What are you looking for?</h1>
+  <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Search anything on campus</p>
+  <div style="position:relative; margin-bottom:14px;">
+    <div class="searchbar">
+      ${iconFor('service',16,'#6B7076')}
+      <input id="search-live" placeholder="e.g. Dr. Ahmed, B7, Room 305, Lab 1" autocomplete="off">
+      <button id="search-go">${iconFor('service',15,'#fff')}</button>
+    </div>
+    <div id="search-live-dropdown" class="hidden" style="position:absolute; left:0; right:0; top:calc(100% + 6px); background:#fff; border:1px solid var(--line); border-radius:13px; box-shadow:var(--shadow); overflow:hidden; z-index:30; max-height:280px; overflow-y:auto;"></div>
+  </div>
+  ${state.recent.length ? `
+  <div class="section-title">Recent Searches</div>
+  <div style="margin-bottom:16px;">
+    ${state.recent.map(r=>`<span class="recent-chip" data-recent-term="${r}">${r}<button data-action="remove-recent" data-term="${r}">&times;</button></span>`).join('')}
+  </div>` : ''}
+  <div class="section-title">Popular Searches</div>
+  <div class="grid2" style="margin-bottom:16px;">
+    ${POPULAR.map(p=>`<button class="pop-card" data-nav="search" data-q="${p.q}"><div class="qi">${iconFor(p.ic,15,'#C89A44')}</div><div><b>${p.label}</b><span>${p.sub}</span></div></button>`).join('')}
+  </div>
+  <div class="promo-card">
+    <div>
+      <b>New Visitor?</b>
+      <p>Use our guide to learn the must-know places.</p>
+      <button class="btn btn-dark btn-sm" data-nav="visitor">View Guide</button>
+    </div>
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: SEARCH RESULTS
+   ============================================================ */
+function renderResults(){
+  const q = state.route.params.q || '';
+  const all = searchIndex(q);
+  const counts = {all:all.length, doctor:all.filter(r=>r.type==='doctor').length, building:all.filter(r=>r.type==='building').length, room:all.filter(r=>r.type==='room').length, service:all.filter(r=>r.type==='service').length};
+  const tab = state.resultTab;
+  const list = tab==='all' ? all : all.filter(r=>r.type===tab);
+  const highlightIds = list.map(r=>r.id).filter(id=>allPlaces().some(p=>p.id===id));
+  return `
+  <div class="searchbar" style="margin-bottom:12px;">
+    ${iconFor('service',16,'#6B7076')}
+    <input id="results-search" value="${q}" placeholder="Search..." autocomplete="off">
+    <button data-action="clear-results-search">&times;</button>
+  </div>
+  <div class="tabbar">
+    <button class="${tab==='all'?'on':''}" data-restab="all">All (${counts.all})</button>
+    <button class="${tab==='doctor'?'on':''}" data-restab="doctor">Doctors (${counts.doctor})</button>
+    <button class="${tab==='building'?'on':''}" data-restab="building">Buildings (${counts.building})</button>
+    <button class="${tab==='room'?'on':''}" data-restab="room">Rooms (${counts.room})</button>
+    <button class="${tab==='service'?'on':''}" data-restab="service">Services (${counts.service})</button>
+  </div>
+  ${highlightIds.length ? `<div class="card" style="padding:6px; margin-bottom:12px; overflow:hidden;">${renderMiniMap(highlightIds)}</div>` : ''}
+  ${list.length===0 ? `
+    <div class="empty card">${iconFor('service',34,'#8A9099')}<h4>Nothing found</h4><p>Try a building name, a room number, or a doctor's name.</p></div>` :
+  `<div class="card" style="padding:4px 12px;">
+    ${list.map(r=>`
+      <div class="res-row" data-searchresult='${JSON.stringify(r)}'>
+        <div class="res-ic" style="background:${CAT_COLOR[r.type==='room'?'building':(r.type==='doctor'?'building':(r.type==='service'?'service':'building'))]}">${(r.title[0]||'?').toUpperCase()}</div>
+        <div class="res-main"><b>${r.title}</b><span>${r.sub}</span></div>
+        <div class="res-dist"><b>${fmtDist(distFromGate(r.buildingId))}</b>away</div>
+      </div>`).join('')}
+  </div>`}
+  `;
+}
+
+/* ============================================================
+   PAGE: BUILDING OVERVIEW
+   ============================================================ */
+function renderBuilding(){
+  const b = findBuilding(state.route.params.id);
+  if(!b) return `<div class="empty card">Building not found.</div>`;
+  const openFloor = state.route.params.floor || b.floors[0];
+  const cleanName = b.name.replace(/&amp;/g,'&');
+  return `
+  <div class="back-link" data-nav="map"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back to Map</div>
+  <div class="b-head">
+    <div><h1>${cleanName}</h1><span>${b.dept}</span></div>
+    <div class="b-ico">${iconFor(b.id==='library'?'library':(b.id==='b9'?'medical':'building'),24,'#C89A44')}</div>
+  </div>
+  <div class="b-actions">
+    <button class="btn btn-ghost btn-sm" data-nav="map" data-focus="${b.id}">${iconFor('service',13)} On Map</button>
+    <button class="btn btn-primary btn-sm" data-nav="navigate" data-to="${b.id}">Directions</button>
+    <button class="btn btn-ghost btn-sm" data-action="save" data-id="${b.id}" data-name="${cleanName}" data-kind="building">${isSaved(b.id)?'Saved':'Save'}</button>
+  </div>
+  <div class="chip-row" style="margin-bottom:4px;">
+    <button class="fchip ${state.roomFilter==='all'?'on':''}" data-roomfilter="all">All rooms</button>
+    <button class="fchip ${state.roomFilter==='open'?'on':''}" data-roomfilter="open">Open now</button>
+  </div>
+  ${b.floors.map(fl=>{
+    const allRooms = b.roomsByFloor[fl]||[];
+    const rooms = state.roomFilter==='open' ? allRooms.filter(r=>r.available) : allRooms;
+    const open = fl===openFloor;
+    return `<div class="accordion ${open?'open':''}" data-accfloor="${fl}">
+      <div class="acc-head" data-toggle-floor="${fl}"><span>${fl}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+      <div class="acc-body"><div class="acc-body-inner">
+        ${rooms.length ? `<div class="grid2">${rooms.map(r=>`
+          <button class="room-tile ${r.available?'avail-yes':'avail-no'}" data-nav="room" data-id="${r.id}">
+            <b>${r.type} ${r.number}</b><span>${r.available?'Open':'In use'}</span>
+          </button>`).join('')}</div>` : `<p style="font-size:12px; color:var(--ink-soft);">${state.roomFilter==='open' && allRooms.length ? 'No open rooms on this floor right now.' : 'No indexed rooms on this floor.'}</p>`}
+      </div></div>
+    </div>`;
+  }).join('')}
+  <div class="card" style="margin-top:12px;">
+    <div class="section-title">Offices</div>
+    <p style="font-size:12.5px; color:var(--ink-soft); line-height:1.6;">${b.offices.join(' \u00b7 ') || 'None listed'}</p>
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: ROOM / LAB DETAIL
+   ============================================================ */
+function renderRoom(){
+  const found = findRoomAnywhere(state.route.params.id);
+  if(!found) return `<div class="empty card">Room not found.</div>`;
+  const {room:r, building:b, floor} = found;
+  const cleanName = b.name.replace(/&amp;/g,'&');
+  const siblings = (b.roomsByFloor[floor]||[]);
+  const gridCells = Array.from({length:Math.max(6, siblings.length)}).map((_,i)=>{
+    const s = siblings[i];
+    if(!s) return `<div class="fp-cell"></div>`;
+    return `<div class="fp-cell ${s.id===r.id?'active':''}">${s.number}</div>`;
+  });
+  return `
+  <div class="back-link" data-nav="building" data-id="${b.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back to ${cleanName}</div>
+  <div class="b-head">
+    <div><h1>${r.type} ${r.number}</h1><span>${cleanName} \u00b7 ${floor}</span></div>
+    <button class="icon-btn ${isSaved(r.id)?'on':''}" data-action="save" data-id="${r.id}" data-name="${r.type} ${r.number} - ${cleanName}" data-kind="room">${iconFor('bookmark',16, isSaved(r.id)?'#C8102E':'#1B1D1F')}</button>
+  </div>
+  <div class="card">
+    <div class="section-title">Floor plan</div>
+    <div class="floorplan">${gridCells.join('')}</div>
+    <span style="font-size:10.5px; color:var(--ink-soft);">Highlighted: ${r.type} ${r.number}</span>
+    <div class="detail-grid">
+      <div><span>TYPE</span><b>${r.type}</b></div>
+      <div><span>CAPACITY</span><b>${r.capacity} people</b></div>
+      <div><span>DEPARTMENT</span><b>${r.dept}</b></div>
+      <div><span>STATUS</span><b style="color:${r.available?'var(--green)':'var(--red)'}">${r.available?'Available now':'In use'}</b></div>
+    </div>
+    <div class="section-title">Facilities</div>
+    <p style="font-size:12.5px; color:var(--ink-soft);">${r.equipment.join(' \u00b7 ')}</p>
+  </div>
+  ${isStudyRoom(r) ? renderOccupancyCard(r) : ''}
+  ${r.bookable ? renderBookingCard(r, b) : ''}
+  <div class="sticky-actions">
+    <button class="btn btn-ghost" data-nav="map" data-focus="${b.id}">View on Map</button>
+    <button class="btn btn-primary" data-nav="navigate" data-to="${b.id}">Directions</button>
+  </div>
+  `;
+}
+function renderOccupancyCard(r){
+  const occ = getOccupancy(r.id, r.capacity);
+  const count = Math.min(r.capacity, occ.base + (occ.youIn?1:0));
+  const pct = Math.round((count/r.capacity)*100);
+  const color = pct<50 ? 'var(--green)' : (pct<85 ? 'var(--gold)' : 'var(--red)');
+  return `<div class="card">
+    <div class="section-title" style="margin-bottom:2px;">Live occupancy</div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline;">
+      <span style="font-size:13px;"><b class="mono" style="font-size:16px;">${count}</b> / ${r.capacity} people here now</span>
+      <span style="font-size:11px; color:var(--ink-soft);">${pct}% full</span>
+    </div>
+    <div class="occ-bar-wrap"><div class="occ-bar"><div class="occ-bar-fill" style="width:${pct}%; background:${color};"></div></div></div>
+    ${occ.youIn ? `
+      <button class="btn btn-dark btn-block" style="margin-top:12px;" data-action="checkin" data-id="${r.id}" data-cap="${r.capacity}">Check Out</button>
+    ` : `
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button class="btn btn-ghost" style="flex:1;" data-action="checkin" data-id="${r.id}" data-cap="${r.capacity}">Check In Manually</button>
+        <button class="btn btn-primary" style="flex:1;" data-action="qr-checkin" data-id="${r.id}" data-cap="${r.capacity}">${iconFor('qrcode',14,'#fff')} Scan QR</button>
+      </div>
+    `}
+  </div>`;
+}
+function renderBookingCard(r, b){
+  return `<div class="card">
+    <div class="section-title" style="margin-bottom:2px;">Book this room</div>
+    <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:4px;">Today\u2019s available slots \u2014 tap to reserve an hour.</p>
+    <div class="slot-grid">
+      ${BOOKING_SLOTS.map(slot=>{
+        const status = slotStatus(r.id, slot);
+        const cls = status==='mine' ? 'booked-mine' : (status==='other' ? 'booked-other' : '');
+        return `<button class="slot-btn ${cls}" ${status==='other'?'disabled':''} data-action="book-slot" data-id="${r.id}" data-building="${b.id}" data-slot="${slot}">${slot}</button>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: INTERACTIVE MAP
+   ============================================================ */
+function renderMap(){
+  return `
+  <div class="searchbar" style="margin-bottom:12px;" data-nav="search">
+    ${iconFor('service',16,'#6B7076')}<input readonly placeholder="Search on map" style="pointer-events:none;">
+  </div>
+  <div class="card layer-panel">
+    <div class="section-title" style="margin-bottom:0;" data-lbl="mapTitle">Show on map</div>
+    <div class="layer-list">
+      ${Object.keys(state.layers).map(k=>{
+        const labels = {building:'Buildings', library:'Library', medical:'Medical', service:'Services', parking:'Parking', gate:'Gates', restroom:'Restrooms', atm:'ATMs'};
+        return `<label class="layer-item"><input type="checkbox" data-layer="${k}" ${state.layers[k]?'checked':''}> ${labels[k]}</label>`;
+      }).join('')}
+    </div>
+  </div>
+  <div class="map-canvas" id="map-canvas">
+    ${renderMapSvg()}
+    <div class="map-controls">
+      <button class="mc-btn" data-zoomctl="in">+</button>
+      <button class="mc-btn" data-zoomctl="out">&minus;</button>
+    </div>
+    <div class="my-loc">${iconFor('gate',13,'#C8102E')} Main Gate</div>
+  </div>
+  ${renderMapLegend()}
+  <div class="section-title" style="margin-top:14px;">All buildings</div>
+  <div class="card" style="padding:4px 12px;">
+    ${BUILDINGS.slice().sort((a,b)=>distFromGate(a.id)-distFromGate(b.id)).map(b=>{
+      const cleanName = b.name.replace(/&amp;/g,'&');
+      return `<div class="res-row" data-nav="building" data-id="${b.id}">
+        <div class="res-ic" style="background:${CAT_COLOR[b.id==='library'?'library':(b.id==='b9'?'medical':'building')]}">${b.code.slice(0,2)}</div>
+        <div class="res-main"><b>${cleanName}</b><span>${b.dept}</span></div>
+        <div class="res-dist"><b>${fmtDist(distFromGate(b.id))}</b>away</div>
+      </div>`;
+    }).join('')}
+  </div>
+  `;
+}
+function renderPinSheet(pinId){
+  const b = findBuilding(pinId), s = findService(pinId);
+  if(b){
+    const cleanName = b.name.replace(/&amp;/g,'&');
+    return `<div class="sheet pin-sheet"><div class="sheet-bar"></div>
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px;">
+        <div class="b-ico">${iconFor(b.id==='library'?'library':(b.id==='b9'?'medical':'building'),22,'#C89A44')}</div>
+        <div><h4 style="font-size:15px;">${cleanName}</h4><span style="font-size:11.5px; color:var(--ink-soft);">${b.dept} \u00b7 ${b.floors.length} floors</span></div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-dark btn-sm" style="flex:1;" data-nav="building" data-id="${b.id}">View Building</button>
+        <button class="btn btn-primary btn-sm" style="flex:1;" data-nav="navigate" data-to="${b.id}">Directions</button>
+      </div>
+    </div>`;
+  }
+  if(s){
+    return `<div class="sheet pin-sheet"><div class="sheet-bar"></div>
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px;">
+        <div class="b-ico">${iconFor(s.category==='gate'?'gate':(s.category==='parking'?'parking':'service'),22,'#C89A44')}</div>
+        <div><h4 style="font-size:15px;">${s.name}</h4><span style="font-size:11.5px; color:var(--ink-soft);">${s.description}</span></div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost btn-sm" style="flex:1;" data-action="save" data-id="${s.id}" data-name="${s.name}" data-kind="service">${isSaved(s.id)?'Saved':'Save'}</button>
+        <button class="btn btn-primary btn-sm" style="flex:1;" data-nav="navigate" data-to="${s.id}">Directions</button>
+      </div>
+    </div>`;
+  }
+  return '';
+}
+
+/* ============================================================
+   PAGE: DIRECTIONS
+   ============================================================ */
+function renderNavigate(){
+  const places = allPlaces();
+  const from = state.route.params.from || 'gate-main';
+  const to = state.route.params.to || '';
+  const mode = state.route.params.mode || (state.settings.accessibility ? 'golfcart' : 'walk');
+  const fromP = places.find(p=>p.id===from), toP = places.find(p=>p.id===to);
+  let resultBlock = '';
+  if(fromP && toP){
+    const dx=Math.abs(fromP.x-toP.x), dy=Math.abs(fromP.y-toP.y);
+    const dist = Math.max(70, Math.round(Math.sqrt(dx*dx+dy*dy)*8));
+
+    if(mode==='golfcart'){
+      const cartTime = Math.max(1, Math.round(dist/220));
+      resultBlock = `
+        <div class="stat-row">
+          <div class="stat-box"><b>${cartTime} min</b><span>Ride time</span></div>
+          <div class="stat-box"><b>${fmtDist(dist)}</b><span>Distance</span></div>
+          <div class="stat-box"><b>Cart</b><span>Mode</span></div>
+        </div>
+        <div class="card" style="padding:6px; margin-bottom:14px; overflow:hidden;">${renderRouteMap(fromP,toP)}</div>
+        ${renderGolfCartCard(fromP, toP, cartTime)}
+      `;
+    } else {
+      const time = Math.max(2, Math.round(dist/80));
+      const steps = [
+        {t:`Exit ${fromP.name} toward the main path.`, d:Math.round(dist*0.3)},
+        {t:`Continue straight, keeping the ${toP.category==='building'?'academic core':'landmark'} on your right.`, d:Math.round(dist*0.4)},
+        {t:`Turn toward ${toP.name} at the signage.`, d:Math.round(dist*0.2)},
+        {t:`Arrive at ${toP.name}.`, d:Math.round(dist*0.1)}
+      ];
+      resultBlock = `
+        <div class="stat-row">
+          <div class="stat-box"><b>${time} min</b><span>Est. time</span></div>
+          <div class="stat-box"><b>${fmtDist(dist)}</b><span>Distance</span></div>
+          <div class="stat-box"><b>Walk</b><span>Mode</span></div>
+        </div>
+        <div class="card" style="padding:6px; margin-bottom:14px; overflow:hidden;">${renderRouteMap(fromP,toP)}</div>
+        <div class="card">
+          <div class="section-title">Step-by-step directions</div>
+          ${steps.map((s,i)=>`<div class="step-row" style="animation:stepIn .3s ease backwards; animation-delay:${i*70}ms;"><div class="step-num">${i+1}</div><p><b>${s.t}</b><span class="sd">${fmtDist(s.d)}</span></p></div>`).join('')}
+          <p style="font-size:11px; color:var(--ink-soft); margin-top:10px;">Total distance: <b class="mono">${fmtDist(dist)}</b></p>
+        </div>
+        <button class="btn btn-dark btn-block" style="margin-top:14px;" data-action="start-nav">Start Navigation</button>
+      `;
+    }
+  } else {
+    resultBlock = `<div class="empty card">${iconFor('service',34,'#8A9099')}<h4>Choose a destination</h4><p>Pick a starting point and where you're headed.</p></div>`;
+  }
+  return `
+  <h1 style="font-size:19px; margin-bottom:12px;" data-lbl="directionsTitle">Directions</h1>
+  <div class="mode-tabs">
+    <button class="${mode==='walk'?'on':''}" data-mode="walk">${iconFor('walk',15)}Walk</button>
+    <button class="${mode==='golfcart'?'on':''}" data-mode="golfcart">${iconFor('golfcart',15)}Golf Cart</button>
+  </div>
+  <div class="fromto">
+    <div class="ft-row"><span class="ft-dot" style="background:#2B2E33;"></span>
+      <select id="nav-from">${places.map(p=>`<option value="${p.id}" ${p.id===from?'selected':''}>${p.name}</option>`).join('')}</select>
+    </div>
+    <div class="ft-divider"></div>
+    <div class="ft-row"><span class="ft-dot" style="background:#C8102E;"></span>
+      <select id="nav-to"><option value="">Choose a destination...</option>${places.map(p=>`<option value="${p.id}" ${p.id===to?'selected':''}>${p.name}</option>`).join('')}</select>
+    </div>
+    <button class="swap-btn" id="nav-swap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg></button>
+  </div>
+  <button class="btn btn-primary btn-block" id="nav-go" style="margin-bottom:16px;">Get Directions</button>
+  ${resultBlock}
+  `;
+}
+
+function renderGolfCartCard(fromP, toP, cartTime){
+  const s = state.golfCartStatus;
+  if(s==='searching'){
+    return `<div class="card golfcart-card">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div class="cart-spinner">${iconFor('golfcart',22,'#C8102E')}</div>
+        <div><b style="font-size:13.5px; display:block;">Finding a nearby cart&hellip;</b><span style="font-size:11.5px; color:var(--ink-soft);">This usually takes a few seconds</span></div>
+      </div>
+      <div class="pulse-dots" style="margin-top:14px;"><span></span><span></span><span></span></div>
+    </div>`;
+  }
+  if(s==='assigned'){
+    return `<div class="card golfcart-card" style="animation:fadeSlideIn .3s ease;">
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">
+        <div class="doc-photo" style="background:var(--red);">${initialsOf(state.golfCartDriver)}</div>
+        <div style="flex:1;"><b style="font-size:13.5px; display:block;">${state.golfCartDriver}</b><span style="font-size:11.5px; color:var(--ink-soft);">Cart ${state.golfCartNumber} &middot; arriving in ${state.golfCartEta} min</span></div>
+        <span style="width:9px; height:9px; border-radius:50%; background:var(--green); animation:pulse2 1.4s ease-out infinite; flex-shrink:0;"></span>
+      </div>
+      <div class="cart-track"><div class="cart-track-fill"></div><div class="cart-icon-moving">${iconFor('golfcart',16,'#fff')}</div></div>
+      <p style="font-size:11px; color:var(--ink-soft); margin-top:10px;">Pickup at ${fromP.name} &middot; drop-off at ${toP.name}</p>
+      <button class="btn btn-ghost btn-block" style="margin-top:12px;" data-action="cancel-golfcart">Cancel request</button>
+    </div>`;
+  }
+  return `<div class="card golfcart-card">
+    <div class="section-title" style="margin-bottom:4px;">Request a golf cart</div>
+    <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Free for students, staff and visitors. A cart usually arrives within ${cartTime+2} minutes.</p>
+    <button class="btn btn-primary btn-block" data-action="request-golfcart">${iconFor('golfcart',15,'#fff')} Call Golf Cart</button>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: DOCTORS DIRECTORY & PROFILE
+   ============================================================ */
+function renderDoctors(){
+  const q = (state.route.params.q||'').toLowerCase();
+  const dept = state.route.params.dept || '';
+  const depts = [...new Set(DOCTORS.map(d=>d.dept))];
+  const list = DOCTORS.filter(d=> (!q || d.name.toLowerCase().includes(q) || d.dept.toLowerCase().includes(q)) && (!dept || d.dept===dept));
+  return `
+  <h1 style="font-size:19px; margin-bottom:12px;" data-lbl="doctorsTitle">Doctors on Campus</h1>
+  <div class="searchbar" style="margin-bottom:10px;">
+    ${iconFor('service',16,'#6B7076')}<input id="doc-filter" value="${state.route.params.q||''}" placeholder="Search doctor or specialty...">
+  </div>
+  <div class="field"><select id="doc-dept"><option value="">All Specialties</option>${depts.map(d=>`<option ${d===dept?'selected':''}>${d}</option>`).join('')}</select></div>
+  <div class="card" style="padding:4px 12px;">
+    ${list.map(d=>{
+      const b = findBuilding(d.building), cleanName=b.name.replace(/&amp;/g,'&');
+      return `<div class="doc-row" data-nav="doctor" data-id="${d.id}">
+        <div class="doc-photo">${initialsOf(d.name)}</div>
+        <div class="doc-main"><b>${d.name}</b><span class="dept">${d.dept}</span><span class="loc">${cleanName}, Room ${d.room}</span></div>
+        <button class="bookmark-btn ${isSaved(d.id)?'on':''}" data-action="save" data-id="${d.id}" data-name="${d.name}" data-kind="doctor" onclick="event.stopPropagation()">${iconFor('bookmark',13, isSaved(d.id)?'#fff':'#1B1D1F')}</button>
+      </div>`;
+    }).join('') || `<div class="empty">${iconFor('doctor',30,'#8A9099')}<h4>No doctors match</h4><p>Try a different name or specialty.</p></div>`}
+  </div>
+  `;
+}
+function renderDoctorProfile(){
+  const d = findDoctor(state.route.params.id);
+  if(!d) return `<div class="empty card">Profile not found.</div>`;
+  const b = findBuilding(d.building), cleanName = b.name.replace(/&amp;/g,'&');
+  return `
+  <div class="back-link" data-nav="doctors"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back to Directory</div>
+  <div class="card">
+    <div style="display:flex; gap:14px; align-items:center; margin-bottom:16px;">
+      <div class="doc-photo" style="width:56px; height:56px; font-size:17px;">${initialsOf(d.name)}</div>
+      <div><h1 style="font-size:18px;">${d.name}</h1><span style="font-size:12.5px; color:var(--red); font-weight:600;">${d.dept}</span></div>
+    </div>
+    <div class="detail-grid" style="grid-template-columns:1fr;">
+      <div><span>OFFICE</span><b>${cleanName}, Room ${d.room}</b></div>
+      <div><span>OFFICE HOURS</span><b>${d.hours}</b></div>
+      <div><span>EMAIL</span><b class="mono" style="font-size:12px;">${d.email}</b></div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:6px;">
+      <button class="btn btn-ghost btn-sm" style="flex:1;" data-nav="building" data-id="${b.id}">View Building</button>
+      <button class="btn btn-primary btn-sm" style="flex:1;" data-nav="navigate" data-to="${b.id}">Directions</button>
+    </div>
+  </div>
+  <div class="card" style="padding:6px; overflow:hidden;">${renderMiniMap([b.id])}</div>
+  <button class="btn btn-ghost btn-block" style="margin-top:12px;" data-action="save" data-id="${d.id}" data-name="${d.name}" data-kind="doctor">${isSaved(d.id)?'Saved to your places':'Save contact'}</button>
+  `;
+}
+
+/* ============================================================
+   PAGE: VISITOR GUIDE
+   ============================================================ */
+function renderVisitor(){
+  const steps = [
+    {t:'Start at the Main Gate', d:'All visitors enter from here.'},
+    {t:'Visit the Administration Building', d:'Get your questions answered at the info desk.'},
+    {t:'Explore Key Places', d:'Library, Medical Center, Labs and more.'},
+    {t:'Use the Map', d:'Search, navigate, and save your favorites.'}
+  ];
+  return `
+  <h1 style="font-size:20px; margin-bottom:4px;">Welcome to E-JUST!</h1>
+  <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:16px;">We're here to help you get around.</p>
+  <div class="card">
+    ${steps.map((s,i)=>`<div class="vg-step"><div class="vg-num">${i+1}</div><div><b>${s.t}</b><span>${s.d}</span></div></div>`).join('')}
+  </div>
+  <div class="card" style="padding:6px; margin-top:12px; overflow:hidden;">${renderMiniMap(['gate-main','b18','library','b9'])}</div>
+  <div class="section-title" style="margin-top:16px;">Quick access</div>
+  <div class="grid2">
+    ${VISITOR_LINKS.map(l=>`<button class="pop-card" data-visitor-link='${JSON.stringify(l)}'><div class="qi">${iconFor(l.ic,15,'#C89A44')}</div><div><b>${l.label}</b><span>Tap to open</span></div></button>`).join('')}
+  </div>
+  <div class="help-card">
+    <div class="help-ic">${iconFor('help',20,'#fff')}</div>
+    <div><b>Need help?</b><p>Visit the Information Center or call <span class="mono">0100 123 4567</span></p></div>
+  </div>
+  <button class="btn btn-primary btn-block" style="margin-top:14px;" data-action="start-tour">Start Guided Tour</button>
+  `;
+}
+function renderTourOverlay(){
+  if(state.tourStep<0) return '';
+  const stop = TOUR_STOPS[state.tourStep];
+  return `<div class="sheet tour-sheet" style="z-index:150;"><div class="sheet-bar"></div>
+    <span class="mono" style="font-size:10.5px; color:var(--red);">STOP ${state.tourStep+1} OF ${TOUR_STOPS.length}</span>
+    <h3 style="font-size:16px; margin:6px 0 8px;">${stop.title}</h3>
+    <p style="font-size:12.5px; color:var(--ink-soft); line-height:1.55; margin-bottom:14px;">${stop.body}</p>
+    <div style="display:flex; gap:4px; margin-bottom:14px;">
+      ${TOUR_STOPS.map((_,i)=>`<div style="height:4px; border-radius:2px; flex:1; background:${i===state.tourStep?'var(--red)':'var(--line)'};"></div>`).join('')}
+    </div>
+    <div style="display:flex; justify-content:space-between; gap:8px;">
+      <button class="btn btn-ghost btn-sm" data-action="end-tour">End</button>
+      <div style="display:flex; gap:8px;">
+        ${state.tourStep>0?`<button class="btn btn-ghost btn-sm" data-action="tour-prev">Back</button>`:''}
+        <button class="btn btn-primary btn-sm" data-action="${state.tourStep===TOUR_STOPS.length-1?'end-tour':'tour-next'}">${state.tourStep===TOUR_STOPS.length-1?'Finish':'Next'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: SAVED
+   ============================================================ */
+function renderSaved(){
+  const tab = state.savedTab;
+  const kindMap = {locations:['building','service'], doctors:['doctor'], rooms:['room'], labs:['room']};
+  const list = tab==='all' ? state.saved : state.saved.filter(s=> tab==='doctors' ? s.kind==='doctor' : (tab==='locations' ? (s.kind==='building'||s.kind==='service') : (tab==='rooms' ? s.kind==='room' : s.kind==='room')));
+  return `
+  <h1 style="font-size:19px; margin-bottom:12px;" data-lbl="savedTitle">My Saved Places</h1>
+  <div class="tabbar">
+    <button class="${tab==='all'?'on':''}" data-savedtab="all">All</button>
+    <button class="${tab==='locations'?'on':''}" data-savedtab="locations">Locations</button>
+    <button class="${tab==='doctors'?'on':''}" data-savedtab="doctors">Doctors</button>
+    <button class="${tab==='rooms'?'on':''}" data-savedtab="rooms">Rooms</button>
+  </div>
+  ${list.length===0 ? `
+    <div class="empty card">${iconFor('service',34,'#8A9099')}<h4>Nothing saved yet</h4><p>Save a building, room or doctor and it'll show up here.</p></div>` :
+  `<div class="card" style="padding:4px 12px;">
+    ${list.map(s=>`
+      <div class="saved-row" data-action="open-saved" data-id="${s.id}" data-kind="${s.kind}">
+        <div class="res-ic" style="background:${CAT_COLOR[s.kind==='doctor'?'building':(s.kind==='service'?'service':'building')]}">${iconFor(s.kind==='doctor'?'doctor':(s.kind==='room'?'room':'building'),16,'#fff')}</div>
+        <div class="res-main"><b>${s.name}</b><span style="text-transform:capitalize;">${s.kind}</span></div>
+        <button class="saved-x" data-action="unsave" data-id="${s.id}" onclick="event.stopPropagation()">&times;</button>
+      </div>`).join('')}
+  </div>
+  <button class="btn btn-ghost btn-block" style="margin-top:12px;" data-action="clear-all">Clear All</button>`}
+  `;
+}
+
+/* ============================================================
+   PAGE: MORE MENU
+   ============================================================ */
+function renderMore(){
+  const items = [
+    {label:'My Schedule', ic:'events', nav:'schedule'},
+    {label:'Study Rooms', ic:'room', nav:'studyrooms'},
+    {label:'Badges', ic:'bookmark', nav:'badges'},
+    {label:'Leaderboard', ic:'trophy', nav:'leaderboard'},
+    {label:'Doctor Directory', ic:'doctor', nav:'doctors'},
+    {label:'Visitor Guide', ic:'events', nav:'visitor'},
+    {label:'Recent Searches', ic:'service', nav:'recent'},
+    {label:'Help & FAQ', ic:'help', nav:'help'},
+    {label:'Profile', ic:'doctor', nav:'profile'},
+    {label:'Settings', ic:'service', nav:'settings'}
+  ];
+  return `
+  <h1 style="font-size:19px; margin-bottom:14px;">More</h1>
+  <div class="card" style="padding:2px 12px;">
+    ${items.map(it=>`<div class="more-row" data-nav="${it.nav}"><div class="more-ic">${iconFor(it.ic,16,'#1B1D1F')}</div><b>${it.label}</b><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>`).join('')}
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: BADGES
+   ============================================================ */
+function renderBadges(){
+  const unlockedCount = state.unlockedBadges.size;
+  const pct = Math.round((unlockedCount/BADGES.length)*100);
+  return `
+  <div class="back-link" data-nav="more"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+  <div class="page-head-row">
+    <h1 style="font-size:19px;">Badges</h1>
+    <button class="btn btn-ghost btn-sm" data-nav="leaderboard">${iconFor('trophy',14)} Leaderboard</button>
+  </div>
+  <p style="font-size:12px; color:var(--ink-soft); margin-bottom:12px;">${state.auth.role==='guest' ? 'Sign in as a student to keep your badges across sessions.' : 'Explore campus to unlock badges.'}</p>
+  <div class="card" style="margin-bottom:14px;">
+    <div style="display:flex; justify-content:space-between; font-size:12.5px;"><b>${unlockedCount} / ${BADGES.length} unlocked</b><span style="color:var(--ink-soft);">${pct}%</span></div>
+    <div class="badge-progress-bar"><div class="badge-progress-fill" style="width:${pct}%;"></div></div>
+  </div>
+  <div class="badge-grid">
+    ${BADGES.map(b=>{
+      const on = state.unlockedBadges.has(b.id);
+      return `<div class="badge-cell ${on?'unlocked':'locked'}">
+        ${!on ? `<svg class="lock-ic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A9099" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>` : ''}
+        <div class="b-ic">${iconFor(b.icon,20, on?'#C8102E':'#8A9099')}</div>
+        <b>${b.name}</b><span>${b.desc}</span>
+      </div>`;
+    }).join('')}
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: LEADERBOARD
+   ============================================================ */
+function renderLeaderboard(){
+  const myName = state.auth.role==='student' ? (state.profile.name||'Student') : 'Guest';
+  const board = LEADERBOARD_STUDENTS.map(s=>({...s, isMe:false}));
+  board.push({name:myName, badges:state.unlockedBadges.size, dept:state.profile.type||'Visitor', isMe:true});
+  board.sort((a,b)=> b.badges-a.badges || (a.isMe?-1:1));
+  const medal = ['#C69A44','#A8AFB8','#B5651D'];
+  return `
+  <div class="back-link" data-nav="badges"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back to Badges</div>
+  <h1 style="font-size:19px; margin-bottom:4px;">Leaderboard</h1>
+  <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Badge counts among students exploring campus this term.</p>
+  <div class="card" style="padding:2px 12px;">
+    ${board.map((s,i)=>`
+      <div class="lb-row ${s.isMe?'lb-me':''}">
+        <div class="lb-rank" style="${i<3?`background:${medal[i]}; color:#fff;`:''}">${i+1}</div>
+        <div class="doc-photo" style="width:36px; height:36px; font-size:12px; ${s.isMe?'background:var(--red);':''}">${initialsOf(s.name)||'ST'}</div>
+        <div style="flex:1;"><b style="font-size:13px; display:block;">${s.name}${s.isMe?' (You)':''}</b><span style="font-size:11px; color:var(--ink-soft);">${s.dept}</span></div>
+        <div style="text-align:right;"><b class="mono" style="font-size:15px;">${s.badges}</b><div style="font-size:10px; color:var(--ink-soft);">badges</div></div>
+      </div>`).join('')}
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: MY SCHEDULE
+   ============================================================ */
+function renderSchedule(){
+  const sorted = state.schedule.slice().sort((a,b)=> WEEKDAYS.indexOf(a.day)-WEEKDAYS.indexOf(b.day) || a.time.localeCompare(b.time));
+  return `
+  <div class="back-link" data-nav="more"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+  <h1 style="font-size:19px; margin-bottom:4px;">My Schedule</h1>
+  <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Add your classes and the Home screen will show what\u2019s next, with walk time.</p>
+  <div class="card">
+    <div class="section-title">Paste your timetable</div>
+    <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:8px;">One class per line: Day, Time, Course, Building, Room</p>
+    <div class="field"><textarea id="sched-paste" rows="3" placeholder="Mon, 10:00, Networking, B7, 305&#10;Wed, 12:00, Circuits Lab, COE, Lab 8" style="width:100%; padding:10px 12px; border-radius:10px; border:1.4px solid var(--line); font-family:var(--font-mono); font-size:12px; resize:vertical;"></textarea></div>
+    <button class="btn btn-dark btn-block" id="sched-parse-btn">Add From Text</button>
+  </div>
+  <div class="card">
+    <div class="section-title">Add a class</div>
+    <div class="grid2">
+      <div class="field"><label>DAY</label><select id="sched-day">${WEEKDAYS.map(d=>`<option>${d}</option>`).join('')}</select></div>
+      <div class="field"><label>TIME</label><input type="time" id="sched-time" value="10:00"></div>
+    </div>
+    <div class="field"><label>COURSE</label><input type="text" id="sched-course" placeholder="e.g. Networking Fundamentals"></div>
+    <div class="grid2">
+      <div class="field"><label>BUILDING</label><select id="sched-building">${BUILDINGS.map(b=>`<option value="${b.id}">${b.name.replace(/&amp;/g,'&')}</option>`).join('')}</select></div>
+      <div class="field"><label>ROOM (optional)</label><input type="text" id="sched-room" placeholder="e.g. 305"></div>
+    </div>
+    <button class="btn btn-primary btn-block" id="sched-add-btn">Add Class</button>
+  </div>
+  <div class="section-title">Your classes</div>
+  ${sorted.length===0 ? `<div class="empty card">${iconFor('events',30,'#8A9099')}<h4>No classes yet</h4><p>Add your first class above.</p></div>` :
+  `<div class="card" style="padding:2px 12px;">
+    ${sorted.map(c=>{
+      const b = findBuilding(c.buildingId);
+      return `<div class="class-row">
+        <div class="class-day-chip">${c.day}</div>
+        <div style="flex:1;"><b style="font-size:13px; display:block;">${c.course}</b><span style="font-size:11.5px; color:var(--ink-soft);">${c.time} \u00b7 ${b?b.name.replace(/&amp;/g,'&'):c.buildingId}${c.room?' \u00b7 Room '+c.room:''}</span></div>
+        <button class="saved-x" data-action="remove-schedule" data-id="${c.id}">&times;</button>
+      </div>`;
+    }).join('')}
+  </div>`}
+  `;
+}
+
+/* ============================================================
+   PAGE: STUDY ROOMS HUB
+   ============================================================ */
+function renderStudyRooms(){
+  const rooms = [];
+  BUILDINGS.forEach(b=>{
+    b.floors.forEach(fl=>{
+      (b.roomsByFloor[fl]||[]).forEach(r=>{
+        if(isStudyRoom(r)) rooms.push({r, b, fl});
+      });
+    });
+  });
+  return `
+  <div class="back-link" data-nav="more"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+  <h1 style="font-size:19px; margin-bottom:4px;">Study Rooms</h1>
+  <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Live occupancy across campus. Group rooms can be booked by the hour.</p>
+  ${rooms.map(({r,b,fl})=>{
+    const occ = getOccupancy(r.id, r.capacity);
+    const count = Math.min(r.capacity, occ.base + (occ.youIn?1:0));
+    const pct = Math.round((count/r.capacity)*100);
+    const color = pct<50 ? 'var(--green)' : (pct<85 ? 'var(--gold)' : 'var(--red)');
+    return `<div class="study-room-card" data-nav="room" data-id="${r.id}">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div><b style="font-size:13.5px; display:block;">${r.type} ${r.number}</b><span style="font-size:11.5px; color:var(--ink-soft);">${b.name.replace(/&amp;/g,'&')} \u00b7 ${fl}</span></div>
+        ${r.bookable ? `<span class="result-tag" style="background:var(--gold-tint); color:var(--gold);">Bookable</span>` : ''}
+      </div>
+      <div class="occ-bar-wrap"><div class="occ-bar"><div class="occ-bar-fill" style="width:${pct}%; background:${color};"></div></div><span style="font-size:11px; color:var(--ink-soft); flex-shrink:0;">${count}/${r.capacity}</span></div>
+    </div>`;
+  }).join('')}
+  `;
+}
+
+/* ============================================================
+   PAGE: RECENT SEARCHES
+   ============================================================ */
+function renderRecent(){
+  return `
+  <div class="back-link" data-nav="more"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+  <h1 style="font-size:19px; margin-bottom:12px;">Recent Searches</h1>
+  ${state.recent.length===0 ? `<div class="empty card">${iconFor('service',30,'#8A9099')}<h4>No searches yet</h4><p>Use the search bar and your history will show up here.</p></div>` :
+  `<div class="card" style="padding:4px 12px;">
+    ${state.recent.map(r=>`<div class="res-row" data-recent-term="${r}"><div class="res-ic" style="background:#8A9099;">${iconFor('service',15,'#fff')}</div><div class="res-main"><b>${r}</b></div></div>`).join('')}
+  </div>
+  <button class="btn btn-ghost btn-block" style="margin-top:12px;" data-action="clear-recent">Clear All</button>`}
+  `;
+}
+
+/* ============================================================
+   PAGE: HELP / PROFILE / SETTINGS
+   ============================================================ */
+function renderHelp(){
+  return `
+  <div class="back-link" data-nav="more"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+  <h1 style="font-size:19px; margin-bottom:12px;">Help &amp; FAQ</h1>
+  <div class="card">
+    ${FAQS.map((f,i)=>`<div class="faq-item" data-faq="${i}"><div class="faq-q">${f.q}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="faq-a">${f.a}</div></div>`).join('')}
+  </div>
+  <div class="card" style="margin-top:12px;">
+    <div class="section-title">Emergency contacts</div>
+    <div style="font-size:12.5px; line-height:2.1;">
+      <div><b>Campus Security</b> \u00b7 <span class="mono">+20 100 555 0102</span></div>
+      <div><b>Medical Center</b> \u00b7 <span class="mono">+20 100 555 0148</span></div>
+      <div><b>Facilities</b> \u00b7 <span class="mono">+20 100 555 0177</span></div>
+      <div><b>Student Services</b> \u00b7 <span class="mono">+20 100 555 0119</span></div>
+    </div>
+    <button class="btn btn-dark btn-sm" style="margin-top:12px;" data-nav="building" data-id="b9">View Medical Center</button>
+  </div>
+  `;
+}
+function renderProfile(){
+  const isGuest = state.auth.role==='guest';
+  return `
+  <div class="back-link" data-nav="more"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+  <h1 style="font-size:19px; margin-bottom:12px;">Profile</h1>
+  <div class="card">
+    <div style="display:flex; gap:14px; align-items:center; margin-bottom:16px;">
+      <div class="doc-photo" style="width:52px; height:52px; font-size:15px; background:var(--red);">${initialsOf(state.profile.name)||'GU'}</div>
+      <div><h2 style="font-size:17px;">${state.profile.name}</h2><span style="font-size:12px; color:var(--ink-soft);">${isGuest?'Guest':state.profile.type}${state.profile.studentId?' \u00b7 '+state.profile.studentId:''}</span></div>
+    </div>
+    ${isGuest ? `<p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">You\u2019re browsing as a guest. Sign in as a student to save your schedule and badges.</p><button class="btn btn-primary btn-block" data-action="logout" style="margin-bottom:6px;">Sign In as Student</button>` : `
+    <div class="field"><label>NAME</label><input type="text" id="pf-name" value="${state.profile.name}"></div>
+    <div class="field"><label>EMAIL</label><input type="email" id="pf-email" value="${state.profile.email}"></div>
+    <div class="field"><label>I AM A...</label><select id="pf-type">${['Current student','New student','Parent','Faculty'].map(t=>`<option ${t===state.profile.type?'selected':''}>${t}</option>`).join('')}</select></div>
+    <button class="btn btn-primary btn-block" data-action="save-profile">Save Changes</button>`}
+  </div>
+  <div class="grid2" style="margin-top:12px;">
+    <div class="card" style="text-align:center;" data-nav="saved"><b class="mono" style="font-size:20px;">${state.saved.length}</b><div style="font-size:11px; color:var(--ink-soft);">Saved places</div></div>
+    <div class="card" style="text-align:center;" data-nav="badges"><b class="mono" style="font-size:20px;">${state.unlockedBadges.size}/${BADGES.length}</b><div style="font-size:11px; color:var(--ink-soft);">Badges earned</div></div>
+  </div>
+  <button class="btn btn-ghost btn-block" style="margin-top:12px;" data-action="logout">Log Out</button>
+  `;
+}
+function renderSettings(){
+  const s = state.settings;
+  return `
+  <div class="back-link" data-nav="more"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+  <h1 style="font-size:19px; margin-bottom:12px;">Settings</h1>
+  <div class="card">
+    <div class="toggle-row"><div><b>Dark mode</b><span>Easier on the eyes at night</span></div><div class="switch ${s.darkMode?'on':''}" data-setting="darkMode"><div class="knob"></div></div></div>
+    <div class="toggle-row"><div><b>Class reminders</b><span>Browser notification 10 min before each class</span></div><div class="switch ${s.classReminders?'on':''}" data-setting="classReminders"><div class="knob"></div></div></div>
+    <div class="toggle-row"><div><b>Accessibility mode</b><span>Directions default to requesting a golf cart</span></div><div class="switch ${s.accessibility?'on':''}" data-setting="accessibility"><div class="knob"></div></div></div>
+    <div class="toggle-row"><div><b>Arabic interface</b><span>Switch key labels to Arabic</span></div><div class="switch ${s.arabic?'on':''}" data-setting="arabic"><div class="knob"></div></div></div>
+    <div class="toggle-row"><div><b>Metric distances</b><span>Show meters instead of feet</span></div><div class="switch ${s.metric?'on':''}" data-setting="metric"><div class="knob"></div></div></div>
+  </div>
+  <button class="btn btn-ghost btn-block" style="margin-top:12px;" data-action="clear-all">Clear saved places &amp; history</button>
+  <div class="card" style="margin-top:20px; border-color:var(--red);">
+    <div class="section-title" style="color:var(--red);">Danger zone</div>
+    <p style="font-size:12px; color:var(--ink-soft); margin-bottom:12px;">Everything is saved to this browser (login, badges, schedule, bookings). This wipes it all and signs you out.</p>
+    <button class="btn btn-primary btn-block" data-action="reset-all-data">Reset Prototype Data</button>
+  </div>
+  `;
+}
+
+/* ============================================================
+   MAIN DISPATCH
+   ============================================================ */
+function render(){
+  const el = document.getElementById('content');
+  const r = state.route;
+  let html='';
+  switch(r.name){
+    case 'home': html = renderHome(); break;
+    case 'search': html = renderSearch(); break;
+    case 'results': html = renderResults(); break;
+    case 'building': html = renderBuilding(); break;
+    case 'room': html = renderRoom(); break;
+    case 'map': html = renderMap(); break;
+    case 'navigate': html = renderNavigate(); break;
+    case 'doctors': html = renderDoctors(); break;
+    case 'doctor': html = renderDoctorProfile(); break;
+    case 'visitor': html = renderVisitor(); break;
+    case 'saved': html = renderSaved(); break;
+    case 'more': html = renderMore(); break;
+    case 'recent': html = renderRecent(); break;
+    case 'help': html = renderHelp(); break;
+    case 'profile': html = renderProfile(); break;
+    case 'settings': html = renderSettings(); break;
+    case 'badges': html = renderBadges(); break;
+    case 'leaderboard': html = renderLeaderboard(); break;
+    case 'schedule': html = renderSchedule(); break;
+    case 'studyrooms': html = renderStudyRooms(); break;
+    default: html = renderHome();
+  }
+  el.innerHTML = html;
+  el.classList.remove('page-enter');
+  void el.offsetWidth;
+  el.classList.add('page-enter');
+
+  document.querySelectorAll('#bottombar button').forEach(b=>{
+    const map = {home:'home', map:'map', search:['search','results'], saved:'saved', more:['more','recent','help','profile','settings','badges','leaderboard','schedule','studyrooms']};
+    const target = map[b.dataset.nav];
+    const active = Array.isArray(target) ? target.includes(r.name) : target===r.name;
+    b.classList.toggle('on', active);
+  });
+  document.querySelectorAll('#topnav button').forEach(b=>{
+    const map = {map:'map', doctors:['doctors','doctor'], visitor:'visitor', help:'help'};
+    const target = map[b.dataset.nav];
+    const active = Array.isArray(target) ? target.includes(r.name) : target===r.name;
+    b.classList.toggle('on', active);
+  });
+
+  document.querySelectorAll('.tour-sheet, .qr-overlay, .pin-sheet').forEach(el=>el.remove());
+  if(state.sheetPin && r.name==='map'){
+    document.body.insertAdjacentHTML('beforeend', renderPinSheet(state.sheetPin));
+  }
+  if(state.tourStep>=0){
+    document.body.insertAdjacentHTML('beforeend', renderTourOverlay());
+  }
+  if(state.qrScan.open){
+    document.body.insertAdjacentHTML('beforeend', renderQrScanOverlay());
+  }
+  applyChrome();
+  saveStateDebounced();
+}
+
+function applyChrome(){
+  document.querySelectorAll('[data-lbl]').forEach(el=>{ el.textContent = t(el.dataset.lbl); });
+  document.body.classList.toggle('dark', !!state.settings.darkMode);
+  document.getElementById('app-shell').dir = state.settings.arabic ? 'rtl' : 'ltr';
+  const av = document.getElementById('topbar-avatar');
+  if(av) av.textContent = state.auth.role==='student' ? (initialsOf(state.profile.name)||'ST') : 'GU';
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+document.addEventListener('click', function(e){
+  const loginTab = e.target.closest('[data-logintab]');
+  if(loginTab){
+    document.querySelectorAll('[data-logintab]').forEach(b=>b.classList.toggle('on', b===loginTab));
+    document.getElementById('login-student-form').classList.toggle('hidden', loginTab.dataset.logintab!=='student');
+    document.getElementById('login-guest-form').classList.toggle('hidden', loginTab.dataset.logintab!=='guest');
+    return;
+  }
+  const loginSubmit = e.target.closest('#login-submit');
+  if(loginSubmit){
+    const username = document.getElementById('login-username').value.trim();
+    const displayName = username
+      ? username.replace(/[._-]+/g,' ').split(' ').filter(Boolean).map(w=>w[0].toUpperCase()+w.slice(1)).join(' ')
+      : 'Student';
+    login('student', {name:displayName, type:'Current student', email:(username||'student')+'@ejust.edu.eg', studentId:username||null});
+    showToast(`Welcome, ${displayName.split(' ')[0]}`);
+    return;
+  }
+  const guestSubmit = e.target.closest('#login-guest-submit');
+  if(guestSubmit){
+    login('guest', {name:'Guest User', type:'Visitor', email:'guest@ejust.edu.eg'});
+    showToast('Browsing as guest');
+    return;
+  }
+
+  const navEl = e.target.closest('[data-nav]');
+  if(navEl){
+    e.preventDefault();
+    const ds = navEl.dataset;
+    const params = {};
+    if(ds.id) params.id = ds.id;
+    if(ds.to) params.to = ds.to;
+    if(ds.focus) params.focus = ds.focus;
+    if(ds.q) params.q = ds.q;
+    let dest = ds.nav;
+    if(dest==='search' && ds.q){ addRecent(ds.q); navigate('results', {q: ds.q}); return; }
+    navigate(dest, params);
+    return;
+  }
+
+  const mapPin = e.target.closest('.map-pin');
+  if(mapPin){ state.sheetPin = mapPin.dataset.pin; render(); return; }
+
+  const zoomctl = e.target.closest('[data-zoomctl]');
+  if(zoomctl){
+    state.mapZoom = zoomctl.dataset.zoomctl==='in' ? Math.min(2, (state.mapZoom||1)+0.2) : Math.max(0.7, (state.mapZoom||1)-0.2);
+    render();
+    return;
+  }
+
+  const layerLabel = e.target.closest('[data-layer]');
+  // handled by change event for checkbox; ignore click bubbling from label text
+  const saveBtn = e.target.closest('[data-action="save"]');
+  if(saveBtn){ toggleSave(saveBtn.dataset.id, saveBtn.dataset.name, saveBtn.dataset.kind); return; }
+  const unsaveBtn = e.target.closest('[data-action="unsave"]');
+  if(unsaveBtn){
+    const idx = state.saved.findIndex(s=>s.id===unsaveBtn.dataset.id);
+    const removed = idx>-1 ? state.saved[idx] : null;
+    state.saved = state.saved.filter(s=>s.id!==unsaveBtn.dataset.id);
+    showToast('Removed from saved places', removed ? ()=>{ state.saved.push(removed); render(); } : null);
+    render(); return;
+  }
+  const openSaved = e.target.closest('[data-action="open-saved"]');
+  if(openSaved){
+    const id=openSaved.dataset.id, kind=openSaved.dataset.kind;
+    if(kind==='doctor') navigate('doctor',{id});
+    else if(kind==='room') navigate('room',{id});
+    else if(kind==='building') navigate('building',{id});
+    else navigate('map',{focus:id});
+    return;
+  }
+
+  const searchResult = e.target.closest('[data-searchresult]');
+  if(searchResult){
+    const r = JSON.parse(searchResult.dataset.searchresult);
+    if(r.type==='building') navigate('building',{id:r.id});
+    else if(r.type==='room') navigate('room',{id:r.id});
+    else if(r.type==='doctor') navigate('doctor',{id:r.id});
+    else navigate('map',{focus:r.id});
+    return;
+  }
+
+  const restab = e.target.closest('[data-restab]');
+  if(restab){ state.resultTab = restab.dataset.restab; render(); return; }
+  const savedtab = e.target.closest('[data-savedtab]');
+  if(savedtab){ state.savedTab = savedtab.dataset.savedtab; render(); return; }
+
+  const toggleFloor = e.target.closest('[data-toggle-floor]');
+  if(toggleFloor){
+    const acc = toggleFloor.closest('.accordion');
+    acc.classList.toggle('open');
+    return;
+  }
+  const roomFilterBtn = e.target.closest('[data-roomfilter]');
+  if(roomFilterBtn){ state.roomFilter = roomFilterBtn.dataset.roomfilter; render(); return; }
+
+  const visitorLink = e.target.closest('[data-visitor-link]');
+  if(visitorLink){
+    const l = JSON.parse(visitorLink.dataset.visitorLink);
+    if(l.target.type==='building') navigate('building',{id:l.target.id});
+    else if(l.target.type==='service') navigate('map',{focus:l.target.id});
+    else navigate('help');
+    return;
+  }
+
+  const startTour = e.target.closest('[data-action="start-tour"]');
+  if(startTour){ state.tourStep=0; render(); return; }
+  const tourNext = e.target.closest('[data-action="tour-next"]');
+  if(tourNext){ state.tourStep=Math.min(TOUR_STOPS.length-1, state.tourStep+1); render(); return; }
+  const tourPrev = e.target.closest('[data-action="tour-prev"]');
+  if(tourPrev){ state.tourStep=Math.max(0, state.tourStep-1); render(); return; }
+  const endTour = e.target.closest('[data-action="end-tour"]');
+  if(endTour){
+    if(state.tourStep===TOUR_STOPS.length-1){ state.stats.tourCompleted=true; checkBadges(); }
+    state.tourStep=-1; navigate('map',{focus:TOUR_STOPS[TOUR_STOPS.length-1].ref}); return;
+  }
+
+  const modeBtn = e.target.closest('[data-mode]');
+  if(modeBtn){
+    const mode = modeBtn.dataset.mode;
+    const from = document.getElementById('nav-from') ? document.getElementById('nav-from').value : state.route.params.from;
+    const to = document.getElementById('nav-to') ? document.getElementById('nav-to').value : state.route.params.to;
+    state.golfCartStatus = 'idle';
+    navigate('navigate', {from, to, mode});
+    return;
+  }
+  const reqCart = e.target.closest('[data-action="request-golfcart"]');
+  if(reqCart){ requestGolfCart(); return; }
+  const cancelCart = e.target.closest('[data-action="cancel-golfcart"]');
+  if(cancelCart){ cancelGolfCart(); return; }
+  const navGo = e.target.closest('#nav-go');
+  if(navGo){
+    const from = document.getElementById('nav-from').value, to = document.getElementById('nav-to').value;
+    if(!to){ showToast('Choose a destination first'); return; }
+    navigate('navigate', {from, to, mode: state.route.params.mode || (state.settings.accessibility ? 'golfcart' : 'walk')});
+    return;
+  }
+  const navSwap = e.target.closest('#nav-swap');
+  if(navSwap){
+    const from = document.getElementById('nav-from').value, to = document.getElementById('nav-to').value;
+    if(to){ navigate('navigate', {from:to, to:from, mode: state.route.params.mode||'walk'}); }
+    return;
+  }
+  const startNav = e.target.closest('[data-action="start-nav"]');
+  if(startNav){ showToast('Navigation started \u2014 follow the highlighted route'); return; }
+
+  const recentTerm = e.target.closest('[data-recent-term]');
+  if(recentTerm){ navigate('results', {q: recentTerm.dataset.recentTerm}); return; }
+  const removeRecent = e.target.closest('[data-action="remove-recent"]');
+  if(removeRecent){ state.recent = state.recent.filter(r=>r!==removeRecent.dataset.term); render(); return; }
+  const clearRecent = e.target.closest('[data-action="clear-recent"]');
+  if(clearRecent){ state.recent=[]; render(); return; }
+
+  const faq = e.target.closest('[data-faq]');
+  if(faq){ faq.classList.toggle('open'); return; }
+
+  const settingSwitch = e.target.closest('[data-setting]');
+  if(settingSwitch){
+    const k=settingSwitch.dataset.setting;
+    state.settings[k]=!state.settings[k];
+    if(k==='classReminders'){
+      if(state.settings.classReminders){
+        requestNotifPermission().then(()=>{ scheduleClassReminder(); render(); });
+      } else {
+        clearTimeout(window._reminderTimer);
+        showToast('Class reminders turned off');
+      }
+    }
+    render();
+    return;
+  }
+
+  const saveProfile = e.target.closest('[data-action="save-profile"]');
+  if(saveProfile){
+    state.profile.name = document.getElementById('pf-name').value || 'Guest User';
+    state.profile.email = document.getElementById('pf-email').value;
+    state.profile.type = document.getElementById('pf-type').value;
+    showToast('Profile updated'); render(); return;
+  }
+
+  const logoutBtn = e.target.closest('[data-action="logout"]');
+  if(logoutBtn){ logout(); return; }
+
+  const checkinBtn = e.target.closest('[data-action="checkin"]');
+  if(checkinBtn){ toggleCheckIn(checkinBtn.dataset.id, parseInt(checkinBtn.dataset.cap,10)); return; }
+
+  const qrCheckinBtn = e.target.closest('[data-action="qr-checkin"]');
+  if(qrCheckinBtn){ openQrScan(qrCheckinBtn.dataset.id, qrCheckinBtn.dataset.cap); return; }
+  const qrCancelBtn = e.target.closest('[data-action="qr-cancel"]');
+  if(qrCancelBtn){ cancelQrScan(); return; }
+
+  const bookSlotBtn = e.target.closest('[data-action="book-slot"]');
+  if(bookSlotBtn && !bookSlotBtn.disabled){ toggleBookSlot(bookSlotBtn.dataset.id, bookSlotBtn.dataset.building, bookSlotBtn.dataset.slot); return; }
+
+  const removeSchedBtn = e.target.closest('[data-action="remove-schedule"]');
+  if(removeSchedBtn){ state.schedule = state.schedule.filter(c=>c.id!==removeSchedBtn.dataset.id); scheduleClassReminder(); showToast('Class removed'); render(); return; }
+
+  const schedAddBtn = e.target.closest('#sched-add-btn');
+  if(schedAddBtn){
+    const day = document.getElementById('sched-day').value;
+    const time = document.getElementById('sched-time').value;
+    const course = document.getElementById('sched-course').value.trim();
+    const buildingId = document.getElementById('sched-building').value;
+    const room = document.getElementById('sched-room').value.trim();
+    if(!course){ showToast('Enter a course name first'); return; }
+    addScheduleEntry(day, time, course, buildingId, room);
+    showToast('Class added to your schedule');
+    render();
+    return;
+  }
+  const schedParseBtn = e.target.closest('#sched-parse-btn');
+  if(schedParseBtn){
+    const text = document.getElementById('sched-paste').value;
+    if(!text.trim()){ showToast('Paste at least one class first'); return; }
+    const {added, failed} = parseScheduleText(text);
+    showToast(added ? `Added ${added} class${added===1?'':'es'}${failed?`, ${failed} skipped`:''}` : 'Couldn\u2019t read those lines \u2014 check the format');
+    render();
+    return;
+  }
+
+  const clearAll = e.target.closest('[data-action="clear-all"]');
+  if(clearAll){
+    const prevSaved = state.saved.slice(), prevRecent = state.recent.slice();
+    state.saved=[]; state.recent=[];
+    showToast('Cleared saved places & history', ()=>{ state.saved=prevSaved; state.recent=prevRecent; render(); });
+    render(); return;
+  }
+
+  const resetAllBtn = e.target.closest('[data-action="reset-all-data"]');
+  if(resetAllBtn){
+    if(resetAllBtn.dataset.armed==='1'){ resetAllData(); return; }
+    resetAllBtn.dataset.armed = '1';
+    resetAllBtn.textContent = 'Tap again to confirm reset';
+    setTimeout(()=>{ if(resetAllBtn){ resetAllBtn.dataset.armed=''; resetAllBtn.textContent='Reset Prototype Data'; } }, 3000);
+    return;
+  }
+
+  const clearResultsSearch = e.target.closest('[data-action="clear-results-search"]');
+  if(clearResultsSearch){ navigate('search'); return; }
+
+  if(!e.target.closest('.map-canvas') && !e.target.closest('.sheet')){
+    if(state.sheetPin && !e.target.closest('[data-pin]')){ state.sheetPin=null; render(); }
+  }
+});
+
+document.addEventListener('change', function(e){
+  if(e.target.matches('[data-layer]')){
+    state.layers[e.target.dataset.layer] = e.target.checked;
+    render();
+  }
+  if(e.target.id==='doc-dept'){ navigate('doctors', {q: state.route.params.q, dept: e.target.value}); }
+});
+
+document.addEventListener('input', function(e){
+  if(e.target.id==='search-live'){
+    const val = e.target.value;
+    const dd = document.getElementById('search-live-dropdown');
+    if(!dd) return;
+    if(val.trim()===''){ dd.classList.add('hidden'); dd.innerHTML=''; return; }
+    const results = searchIndex(val).slice(0,7);
+    dd.innerHTML = results.length ? results.map(r=>`
+      <div class="res-row" data-searchresult='${JSON.stringify(r)}' style="cursor:pointer;">
+        <div class="res-ic" style="background:${CAT_COLOR[r.type==='room'?'building':(r.type==='doctor'?'building':(r.type==='service'?'service':'building'))]}">${(r.title[0]||'?').toUpperCase()}</div>
+        <div class="res-main"><b>${r.title}</b><span>${r.sub}</span></div>
+      </div>`).join('') : `<div class="res-row"><div class="res-main"><b>No matches</b><span>Try a different term</span></div></div>`;
+    dd.classList.remove('hidden');
+  }
+  if(e.target.id==='doc-filter'){
+    const val = e.target.value;
+    state.route.params.q = val;
+    const el = document.getElementById('content');
+    const dept = state.route.params.dept||'';
+    render();
+    setTimeout(()=>{ const inp=document.getElementById('doc-filter'); if(inp){ inp.focus(); inp.setSelectionRange(val.length,val.length);} },0);
+  }
+  if(e.target.id==='results-search'){
+    const val = e.target.value;
+    clearTimeout(window._searchDebounce);
+    window._searchDebounce = setTimeout(()=>{ navigate('results', {q: val}); setTimeout(()=>{ const inp=document.getElementById('results-search'); if(inp){ inp.focus(); inp.setSelectionRange(val.length,val.length);} },0); }, 250);
+  }
+});
+
+document.addEventListener('click', function(e){
+  if(e.target.id==='search-go'){
+    const inp = document.getElementById('search-live');
+    if(inp && inp.value.trim()){ addRecent(inp.value.trim()); navigate('results', {q: inp.value.trim()}); }
+    return;
+  }
+  if(!e.target.closest('#search-live') && !e.target.closest('#search-live-dropdown')){
+    const dd = document.getElementById('search-live-dropdown');
+    if(dd) dd.classList.add('hidden');
+  }
+});
+
+document.addEventListener('keydown', function(e){
+  if(e.target.id==='search-live' && e.key==='Enter'){
+    const q = e.target.value.trim();
+    if(!q) return;
+    addRecent(q); navigate('results', {q});
+  }
+});
+
+/* initial boot */
+const restored = loadState();
+if(restored && state.auth.loggedIn){
+  document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('app-shell').classList.add('active');
+  if(state.settings.classReminders) scheduleClassReminder();
+  showToast(`Welcome back, ${(state.profile.name||'').split(' ')[0] || 'there'}`);
+}
+render();
+
+</script>
+</body>
+</html>
