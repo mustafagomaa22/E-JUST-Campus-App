@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-JUST Campus Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="screen-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-mark" style="width:44px; height:44px; border-radius:13px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 2 3 7l9 5 9-5-9-5z"/><path d="M3 12l9 5 9-5"/></svg></div>
+      <div><b>E-JUST</b><span>Campus Map</span></div>
+    </div>
+    <h1>Welcome back</h1>
+    <p class="login-sub">Sign in to track badges, save your schedule, and book study rooms.</p>
+    <div class="login-tabs">
+      <button class="on" data-logintab="student">Student</button>
+      <button data-logintab="guest">Guest</button>
+    </div>
+    <div id="login-student-form">
+      <div class="field"><label>USERNAME</label><input type="text" id="login-username" placeholder="e.g. mustafa.gomaa"></div>
+      <div class="field"><label>PASSWORD</label><input type="password" id="login-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>
+      <button class="btn btn-primary btn-block" id="login-submit">Sign In</button>
+      <p class="login-note">Prototype login &mdash; any details will work.</p>
+    </div>
+    <div id="login-guest-form" class="hidden">
+      <p class="login-note" style="margin:6px 0 16px;">Browse the map, search buildings and doctors, and get directions without an account. Badges and schedule won\u2019t be saved.</p>
+      <button class="btn btn-dark btn-block" id="login-guest-submit">Continue as Guest</button>
+    </div>
+  </div>
+</div>
+
+<div id="app-shell">
+  <div class="topbar">
+    <div class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 2 3 7l9 5 9-5-9-5z"/><path d="M3 12l9 5 9-5"/></svg></div>
+    <div class="logo-text"><b>E-JUST</b><span>Campus Map</span></div>
+    <div class="topnav" id="topnav">
+      <button data-nav="map"><span data-lbl="map">Map</span></button>
+      <button data-nav="doctors"><span data-lbl="directory">Directory</span></button>
+      <button data-nav="visitor"><span data-lbl="explore">Explore</span></button>
+      <button data-nav="help"><span data-lbl="help">Help</span></button>
+    </div>
+    <div class="avatar" data-nav="profile" id="topbar-avatar">GU</div>
+  </div>
+
+  <div id="content"></div>
+
+  <div class="bottombar" id="bottombar">
+    <button data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span class="lbl" data-lbl="home">Home</span></button>
+    <button data-nav="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/></svg><span class="lbl" data-lbl="map">Map</span></button>
+    <button data-nav="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="lbl" data-lbl="search">Search</span></button>
+    <button data-nav="saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span class="lbl" data-lbl="saved">Saved</span></button>
+    <button data-nav="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span class="lbl" data-lbl="more">More</span></button>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
